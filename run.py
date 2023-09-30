@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from XNTM import *
-from XNTM import tree
-from XNTM import xntm
+from Scaling import *
+from Scaling import tree
+from Scaling import xntm
 from importlib import reload 
 from pathlib import Path
 import sys 
@@ -21,7 +21,7 @@ import datetime
 height, size = 3,20
 height,num22,num23,TREE = genInputTree(int(height),0.8,4,fair=True)
 
-#*************************tmp.pyの動かし方*********************************#
+#********************* tmp.pyの動かし方（How to）*****************************#
 # python3 tmp.py #1 
 # 入力パターン1: #1_混合木を表すリストの文字列
 # 入力パターン2: #1_混合木の高さ
@@ -69,7 +69,6 @@ if len(sys.argv) == 4:
     color = eval(sys.argv[2])
     size = eval(sys.argv[3])
 
-print(TREE)
 
 Tree = tree.InputToTree(TREE)
 if color : 
@@ -78,6 +77,8 @@ create_directory("image")
 tree.saveTree(Tree,"image/Tree"+"slide.png")
 #TransformedTree = tree.TransformTree(Tree)
 #tree.saveTree(TransformedTree,"image/TransformedTree"+"slide.png")
+ColorList = tree.ColorList 
+print("同じ条件で再実行する場合は>>\npython3 run.py \"",TREE,"\" \"",ColorList,"\" ",size,"\n",sep="")
 
 ScaledTree = deepcopy(Tree)
 while(True): 
@@ -91,11 +92,7 @@ while(True):
     now = datetime.datetime.now()
     #tree.saveTree(ScaledTree,"image/ScaledTree"+"{0:%Y-%m-%d %H:%M:%S}".format(now)+"slide.png")
     tree.saveTree(ScaledTree,"image/ScaledTree"+"slide.png")
-ColorList = tree.ColorList 
-print(ColorList)
-if color : 
-    ColorList = color 
-print(ColorList)
+
 #ColorList = ['#4ccdd1', '#ec8f8a', '#41ee85', '#957470', '#89a772', '#f3bad0', '#d5b38b', '#e3c283', '#5a58e3', '#e59545']
 
 #WithoutTransform,cmpOverlappNum,cmpFootPrint,cmpFreq = xntm(Tree,[size,size],ColorList=ColorList,ImageName="slide",ImageOut=True,ProcessOut=False) 
