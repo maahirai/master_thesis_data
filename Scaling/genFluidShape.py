@@ -4,9 +4,9 @@ import copy
 import os
 
 # ミキサーの水平，垂直方向の幅の最大値(最小2)
-hvMAX = 3
+hvMAX = 100
 # 液滴数の最大値
-fluidNumMax = 10
+fluidNumMax = 100
 # 生成したデータを保存するディレクトリのパス
 path = './FluidShapeLib'
 
@@ -37,7 +37,7 @@ def main():
     except FileExistsError:
         print("Folder %s already exists" % path)
 
-    with open("FluidShapeLib/1fluid.json", "w") as f:
+    with open(os.path.join(path,"1fluid.json"), "w") as f:
         json.dump(json_data, f,  ensure_ascii=False, indent=4,  separators=(',', ': '))
     
     dy = [0,-1,0,1]
@@ -64,13 +64,13 @@ def main():
                         lowerX,upperX = [-100 for i in range(hvMAX)],[-100 for i in range(hvMAX)]
                         for coord in FluidShape:
                             y,x = coord["y"],coord["x"]
-                            if lowerX[x]==-1 and upperX[x]==-1:
+                            if lowerX[x]==-100 and upperX[x]==-100:
                                 lowerX[x] = y 
                                 upperX[x] = y 
                             else: 
                                 lowerX[x] = min(y,lowerX[x])
                                 upperX[x] = max(y,upperX[x])
-                            if lowerY[y]==-1 and upperY[y]==-1:
+                            if lowerY[y]==-100 and upperY[y]==-100:
                                 lowerY[y] = x
                                 upperY[y] = x
                             else: 
