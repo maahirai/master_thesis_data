@@ -20,8 +20,8 @@
 using json = nlohmann::json;
 using namespace std;
 
-const int fluidNumMax = 10; 
-const int hvMAX = 2;
+const int fluidNumMax = 9; 
+const int hvMAX = 3;
 const string path = "./FluidShapeLib/";
 
 bool isInsideBoundary(int y,int x){
@@ -31,14 +31,6 @@ bool isInsideBoundary(int y,int x){
         return false;
 }
 
-bool hasKey(string key, json object) {
-  auto itr_check = object.find(key);
-  if (itr_check != object.end())
-    return true;
-  else
-    return false;
-}
-
 bool SameArray(json array, json cmp_array) {
   if (array.size() == cmp_array.size()) {
     for (int i = 0; i < array.size(); i++) {
@@ -46,16 +38,6 @@ bool SameArray(json array, json cmp_array) {
         return false;
     }
     return true;
-  }
-  return false;
-}
-
-
-bool ArrayContainsValue(json value, json Array) {
-  for (auto v : Array) {
-    if (v == value) {
-      return true;
-    }
   }
   return false;
 }
@@ -101,8 +83,8 @@ int main() {
         //set< vector<int> > SetOfNewShape; 
         for (int formerSearchSpace=2;formerSearchSpace<=hvMAX;formerSearchSpace++){
             string strfss = to_string(formerSearchSpace); 
-            if (hasKey(strfss,FormerFluidShapes)){
-                for(int fluididx=0; fluididx<size(FormerFluidShapes[strfss]);fluididx++){
+            if (FormerFluidShapes.contains(strfss)){
+                for(int fluididx=0; fluididx<FormerFluidShapes[strfss].size();fluididx++){
                     string strfluididx = to_string(fluididx); 
                     vector<json> FluidShape = FormerFluidShapes[strfss][strfluididx]; 
                     // より扱いやすいデータ型に変換
@@ -122,31 +104,30 @@ int main() {
                         shape.push_back(p); 
                     }
 
-                    for(int coordidx=0; coordidx<size(shape); coordidx++){
+                    for(int coordidx=0; coordidx<shape.size(); coordidx++){
                         int y=get<0>(shape[coordidx]),x=get<1>(shape[coordidx]); 
-                    for(int way=0; way<4; way++){
-                        int ny=y+dy[way],nx=x+dx[way]; 
-                        pair<int,int> ncoord{ny,nx}; 
-                        if(isInsideBoundary(ny,nx) && count(shape.begin(),shape.end(),ncoord)==0){
-                            auto nshape = shape; 
-                            nshape.push_back(ncoord); 
-                            sort(nshape.begin(),nshape.end()); 
-                            bool nxFirstTime = (lowerX[nx]==-100&&upperX[nx]==-100); 
-                            bool nxNextToFormer = (abs(ny-lowerX[nx])<=1 || abs(ny-upperX[nx])<=1); 
-                            bool nyFirstTime = (lowerY[ny]==-100 || upperY[ny]==-100); 
-                            bool nyNextToFormer = (abs(nx-lowerY[ny])<=1 || abs(nx-upperY[ny])<=1); 
-                            if (!SetOfNewShape.contains(nshape)
-                                && ((!nxFirstTime || !nyFirstTime) && (nxFirstTime || nxNextToFormer) && (nyFirstTime || nyNextToFormer)) ){
-                                SetOfNewShape.emplace(nshape); 
+                        for(int way=0; way<4; way++){
+                            int ny=y+dy[way],nx=x+dx[way]; 
+                            pair<int,int> ncoord{ny,nx}; 
+                            if(isInsideBoundary(ny,nx) && count(shape.begin(),shape.end(),ncoord)==0){
+                                auto nshape = shape; 
+                                nshape.push_back(ncoord); 
+                                sort(nshape.begin(),nshape.end()); 
+                                bool nxFirstTime = (lowerX[nx]==-100&&upperX[nx]==-100); 
+                                bool nxNextToFormer = (abs(ny-lowerX[nx])<=1 || abs(ny-upperX[nx])<=1); 
+                                bool nyFirstTime = (lowerY[ny]==-100&&upperY[ny]==-100); 
+                                bool nyNextToFormer = (abs(nx-lowerY[ny])<=1 || abs(nx-upperY[ny])<=1); 
+                                if (!SetOfNewShape.contains(nshape)
+                                    && ((!nxFirstTime || !nyFirstTime) && (nxFirstTime || nxNextToFormer) && (nyFirstTime || nyNextToFormer)) ){
+                                    SetOfNewShape.emplace(nshape); 
+                                }
                             }
                         }
-                    }
                     }
                 }
             }
         }
-        ofstream new_file;
-        new_file.open(NewFilePath,ios::out); 
+     
         json new_data; 
         for (auto nshape : SetOfNewShape){
             int SearchSpace = -1; 
@@ -161,15 +142,17 @@ int main() {
             if(2<=SearchSpace && SearchSpace<=hvMAX){
                 string strss = to_string(SearchSpace); 
                 int idx = 0; 
-                if(!hasKey(strss,new_data))
+                if(!new_data.contains(strss))
                     new_data[strss] = json::object(); 
                 else  
-                    idx = size(new_data[strss]);
+                    idx = new_data[strss].size();
                 new_data[strss][to_string(idx)] = OutputFormedData; 
             }
             else  
                 cerr<<"探索領域を超えたサイズの液滴です"<<SearchSpace<<hvMAX<<endl; 
         }
+        ofstream new_file;
+        new_file.open(NewFilePath,ios::out);
         new_file << new_data <<endl; 
         new_file.close();
     }
