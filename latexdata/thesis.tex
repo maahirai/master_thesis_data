@@ -1,0 +1,46 @@
+\documentclass[a4paper,12pt,dvipdfmx]{jreport}
+
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{cite} 
+\usepackage{ascmac}
+\usepackage{amsmath}
+\usepackage{algorithm, algpseudocode} 
+
+%%% site-sty
+
+%%% original
+\usepackage{sty/NGC}
+
+\title{混合木の変形による\\試薬合成におけるフラッシング回数の削減}
+
+\author{平井将隆}
+\stdnum{6611220030-5}
+\date{2023年度}
+
+\begin{document}
+\baselineskip 1.9zw
+\maketitle
+
+
+\newpage
+\thispagestyle{empty}
+\pagenumbering{roman}
+\setcounter{page}{1}
+\input{0-abstract}
+\newpage
+\tableofcontents
+\listoffigures
+\listoftables
+
+\newpage
+\pagenumbering{arabic}
+\input{1-introduction}
+\input{2-preparation}
+\input{3-proposed}
+\input{4-experiment}
+\input{5-conclusion}
+\input{6-acknowledgement}
+
+\bibliographystyle{junsrt}
+\bibliography{ref}
+\end{document}
