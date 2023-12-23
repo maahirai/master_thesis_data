@@ -483,6 +483,9 @@ def Mix(MixerHash):
         y,x = cell
         PMD.State[y][x] = -1*MixerHash 
     ModuleStates.ModuleInfo[str(MixerHash)].ProvidingFluids()
+    for chash in mixer.ChildrenHash: 
+        ModuleStates.ModuleInfo[str(chash)].Done()
+
 
 def globalInit(PMDsize,root,IsScalingUsable):
     global PMD,ModuleStates,ScalingUsable#,CntRollBack,RollBackHash,PrevRollBackPMHash 
@@ -574,5 +577,6 @@ def SamplePreparation(root,PMDsize,ColorList=None,IsScalingUsable=False,ProcessO
             # あとで書く
             pass; 
 
+    print("にゃん",ModuleStates.ModulesStatesAt)
     #親のミキサーと提供液滴分のセルを選択する．
     ## 現時点のPMDの状況で，IFが必要ない子のレイアウトとIFが必要な子のレイアウトを分けて数え上げる．
