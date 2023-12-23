@@ -2,7 +2,6 @@ import random
 import sys
 
 Registered_Hash = []
-
 class node(object):
     def __init__(self, name, size=6, provide_vol=0, children = None ):
         self.name = name 
@@ -47,7 +46,7 @@ MIX_COUNTER = 0
 def InputToTree(Input):
     root = _InputToTree(Input,0)
     tree = LabelingMixers(root)
-    tree = WeakTransformTree(tree)
+    tree = TransformTree(tree)
     return tree
 
 def _InputToTree(Input,provide_vol):
@@ -97,48 +96,10 @@ def TransformTree(root):
     global lNumChildMixer,MIX_COUNTER 
     lNumChildMixer = list(itertools.repeat(-1,MIX_COUNTER))
     cpTree = deepcopy(root)
-    transformed_tree = _old_TransformTree(cpTree)
+    transformed_tree = _PPValue_TransformTree(cpTree)
     return transformed_tree
 
-def WeakTransformTree(root):
-    global lNumChildMixer,MIX_COUNTER 
-    lNumChildMixer = list(itertools.repeat(-1,MIX_COUNTER))
-    cpTree = deepcopy(root)
-    transformed_tree = _weak_TransformTree(cpTree)
-    return transformed_tree
-
-def OctTransformTree(root):
-    global lNumChildMixer,MIX_COUNTER 
-    lNumChildMixer = list(itertools.repeat(-1,MIX_COUNTER))
-    cpTree = deepcopy(root)
-    transformed_tree = _Oct_old_TransformTree(cpTree)
-    return transformed_tree
-
-def _weak_TransformTree(root):
-    Children = []
-    for item in root.children:
-        ecv = 0
-        if IsMixerNode(item):
-            #put mixer on the left-side
-            ecv = 1
-            # we must place tht item firstly if (item.provide_vol == (ParentMixer.size - 1))
-            if item.provide_vol == root.size - 1:
-                # so large value
-                INF = 1000000000000
-                ecv += INF 
-            # if 4Mixer provides 3-fluids
-            elif item.provide_vol%2 and item.provide_vol>1 and item.size//2<=2: 
-                ecv += 100000000
-        Children.append((item,ecv))
-    SortedByECV = sorted( Children, key = lambda x: x[1], reverse = True)
-    res = []
-    for item in SortedByECV:
-        Subtree = _weak_TransformTree(item[0])
-        res.append(Subtree)
-    root.children = res
-    return root
-
-def _old_TransformTree(root):
+def _PPValue_TransformTree(root):
     Children = []
     for item in root.children:
         ecv = 0
@@ -159,114 +120,29 @@ def _old_TransformTree(root):
     SortedByECV = sorted( Children, key = lambda x: x[1], reverse = True)
     res = []
     for item in SortedByECV:
-        Subtree = _old_TransformTree(item[0])
+        Subtree = _PPValue_TransformTree(item[0])
         res.append(Subtree)
     root.children = res
     return root
 
-def __old_TransformTree(root):
+# ECN == Estemated Celluse Number
+def _ECN_TransformTree(root):
     Children = []
     for item in root.children:
-        ecv = 0
+        ecn = 0
         if IsMixerNode(item):
-            # Sum of Number of children-mixer in the subtree
-            ecv += NumChildMixer(item)
-            # providing volume 
-            #ecv += item.provide_vol
-            # we must place tht item firstly if (item.provide_vol == (ParentMixer.size - 1))
-            if item.provide_vol == root.size - 1:
-                # so large value
-                INF = 1000000000000
-                ecv += INF 
-            # if 4Mixer provides 3-fluids,3:2:1とかのとき,3を優先する必要あり
-            elif item.provide_vol%2 and item.provide_vol>1 and item.size//2<=2: 
-                ecv += 100000000
+            ecn += EstimateCelluseNum(item)
+        else : 
+            # 試薬液滴は余ったセルに配置する．飛地になってもいいし，配置の自由度が高いから．
+            ecn += EstimateCelluseNum(item)/1000
         Children.append((item,ecv))
-    SortedByECV = sorted( Children, key = lambda x: x[1], reverse = True)
+    SortedByECN = sorted(Children, key = lambda x: x[1], reverse = True)
     res = []
-    for item in SortedByECV:
-        Subtree = __old_TransformTree(item[0])
+    for item in SortedByECN:
+        Subtree = _ECN_TransformTree(item[0])
         res.append(Subtree)
     root.children = res
     return root
-
-### 配置優先度の式を変えた
-def _Oct_old_TransformTree(root): 
-    Children = []
-    INF = 100000000
-    for item in root.children:
-        ### 試薬液滴を配置するのは，後回し
-        ecv = 0
-        if IsMixerNode(item):
-            # Sum of Number of children-mixer in the subtree
-            ecv += NumChildMixer(item)
-            # providing volume 
-            #　提供液滴が多いほど，後の配置に邪魔になるから後回し.
-            # 並列度を高くするのには効くかも
-            ecv /= item.provide_vol
-            # we must place tht item firstly if (item.provide_vol == (ParentMixer.size - 1))
-            # 5:1の5や，3:1の3
-            if item.provide_vol == root.size - 1:
-                ecv = INF 
-            # どんなパターンでも3from4Mを優先する必要があり.
-            # 例えば，1:1:1:3の場合，3from4を優先せんと適応できるパターンがない
-            elif item.provide_vol%2 and item.provide_vol>1 and item.size//2<=2: 
-                ecv = INF
-        Children.append((item,ecv))
-    SortedByECV = sorted( Children, key = lambda x: x[1], reverse = True)
-    res = []
-    for item in SortedByECV:
-        Subtree = _Oct_old_TransformTree(item[0])
-        res.append(Subtree)
-    root.children = res
-    return root
-
-def _new_TransformTree(root):
-    root = split_flash_needed_pattern(root)
-    return _old_TransformTree(root)
-
-def split_flash_needed_pattern(root):
-    global MIX_COUNTER,Registered_Hash
-    # 6Mixerの5や4Mixerの3など必ずフラッシングが発生する提供比率を，4:1や2:1に分割することで回避する．
-    fragments = []
-    skip = False
-    #全部ミキサーノードの場合のみ対象
-    for item in root.children:
-        if not IsMixerNode(item):
-           skip = True 
-
-    for item in root.children:
-        if (not skip) and item.provide_vol == root.size - 1:
-            item.provide_vol = item.provide_vol - 1
-            fragment = generate_fragment(item)
-            fragments.append(fragment)
-    for item in fragments: 
-        root.children.append(item)
-    res = []
-    for item in root.children: 
-        Subtree = split_flash_needed_pattern(item)
-        res.append(Subtree)
-    root.children = res 
-    return root
-
-def generate_fragment(root): 
-    global MIX_COUNTER,Registered_Hash
-    fragment = deepcopy(root)
-    fragment.provide_vol = 1
-    q = []
-    q.append(fragment)
-    while(q): 
-        Node = q.pop()
-        hash_v = 1
-        while(hash_v in Registered_Hash):
-            hash_v = random.randint(1,100001)
-        Registered_Hash.append(hash_v)
-        Node.hash = hash_v
-        if IsMixerNode(Node): 
-            MIX_COUNTER += 1
-            for child in Node.children: 
-                q.append(child)
-    return fragment
 
 def NumChildMixer(root):
     global lNumChildMixer
@@ -292,6 +168,7 @@ def NumChildMixer(root):
             lNumChildMixer[mixeridx] = v
             return lNumChildMixer[mixeridx]
 
+# 木全体を入力として，木全体を返す
 def Scaling(root,target_mixer_name,scale_factor):
     if not isinstance(scale_factor, int) or scale_factor <= 0 : 
         print("入力が不正です.スケーリングの倍率:{}".format(scale_factor),file=sys.stderr)
@@ -334,7 +211,7 @@ def Scaling(root,target_mixer_name,scale_factor):
         e = q.pop(0)
         new_children = []
         reagent_dict = {}
-        # 飛ばされるミキサーノードが格納される
+        # 削除されるミキサーノードが格納される
         dfsq = []
         for child in e.children: 
             if IsMixerName(child.name) and child.size == child.provide_vol: 
@@ -372,14 +249,121 @@ def Scaling(root,target_mixer_name,scale_factor):
         for reagent in reagent_dict.values(): 
             new_children.append(reagent)
         e.children = new_children 
-
+        # ミキサーの場合，子の組み合わせが変わっている場合があるので
+        # ミキサーサイズの更新をする
+        if IsMixerName(e.name):
+            mixer_size = 0
+            for child in e.children:
+                mixer_size += child.provide_vol
+            e.size = mixer_size
     while(q): 
         e = q.pop(0)
         for c in e.children: 
             if IsMixerName(c.name): 
                 q.append(c)
                 print(c.name,c.size,c.provide_vol)
-    return root_mixer
+    return root_mixer 
+
+# 提供比率のグループを判定する関数
+def judgeRatioGroup(node):
+    # 全ての子がミキサーの場合，グループが1つ上がる
+    AllChildrenIsMixer = True
+    # 3以上の奇数を含む場合はグループ0(3fluid from 6M to 6Mは例外)
+    IncludeOddRatio = False 
+    cnt = 0
+    for child in node.children: 
+        if IsMixerNode(child): 
+            cnt+=1
+            if child.provide_vol%2 and child.provide_vol//2>=1:
+                # 3fluid from 6M を 6Mに提供するときなど，
+                # PMDの状況と親子ミキサーのレイアウトの仕方次第でIF無しでの置き方もある
+                if child.size>=child.provide_vol*2 and node.size>=child.provide_vol*2: 
+                    continue
+                else:
+                    IncludeOddRatio = True
+        else:
+            AllChildrenIsMixer = False 
+         
+    RatioGroup = 0
+    if IncludeOddRatio: 
+        RatioGroup = 100
+    else:
+        RatioGroup = cnt
+    return RatioGroup 
+
+# ヒューリティックに則ってレイアウト前に最低限のスケーリングを行う関数
+def preLayout_Scaling(root): 
+    # BFSでqueueにグル5~100の提供比率を収集
+    # 葉に近い提供比率である，BFS順において後の方にqueueに入れられた提供比率からスケーリングを行う
+    # 但し，queue内の全ての提供比率に対するスケーリングが行えない場合は，
+    # 先行して行っていたグル0以外の提供比率のスケーリング分のロールバックを行い，グル0のスケーリングを全て行う．
+    tree = copy.deepcopy(root)
+    q = collectGroup(tree,5,100)
+    for name in reversed(q): 
+        # 適当に全部x2スケ
+        tree = Scaling(tree,name,2)
+    return tree
+
+# groupiからgroupjの提供比率(i<j,i=0,j=2ならグループ0,1,2)で子から中間液滴を受け取るミキサーノード名の集合を返す
+def collectGroup(root,i,j): 
+    q_group = []
+    q = []
+    q.append(root)
+    while(q):
+        node = q.pop()
+        for child in node.children: 
+            if IsMixerNode(child):
+                group = judgeRatioGroup(child)
+                if i<=group and group<=j:
+                    q_group.append(child.name)
+                q.append(child)
+    return q_group
+
+# 部分木内のミキサノードの混合に使われるPMDのセル数の上限を計算する. これを使用セル数の推定値とする．
+# PMD上での液滴の混合に使用される試薬液滴の総個数(F=0回の時の使用セル数,使用セル数の最大値)を数え上げる. 
+# 入力は使用セル数を推定する部分木の子のミキサー
+def EstimateCelluseNum(SubtreeRoot):
+    q = []
+    q.append(SubtreeRoot)
+    num = 0
+    while(q): 
+        n = q.pop()
+        for child in n.children:
+            if IsMixerNode(child):
+                q.append(child)
+            else: 
+                num+=child.size
+    return num 
+
+#### 入力混合木の形式でしか使えない⭐︎
+## parentの子を，ECNの大きい順に並び替えて返す
+#def ChildrenSortedByECN(parent):
+#    children = deepcopy(parent.children)
+#    l = []
+#    for child in children: 
+#        ecn = 0 
+#        if IsMixerNode(child):
+#            ecn = EstimateCelluseNum(child)
+#        else: 
+#            ecn = EstimateCelluseNum(child)/1000
+#        s = (ecn,child)
+#        l.append(s)
+#    l.sort(l,reverse=True)
+#    res = [] 
+#    for ecn,child in l:
+#        res.append(child) 
+#    return res
+
+def getNode(root,nodeName):
+    q=[]
+    q.append(root)
+    while(q):
+        n = q.pop()
+        if n.name == nodeName:
+            return n
+        for child in n.children:
+            q.append(child)
+    return None
 
 ######################################################################################
 
