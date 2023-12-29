@@ -119,7 +119,7 @@ Grid = []
 draw = None
 import random
 from pathlib  import Path
-def PMDSlideImage(filename,ColorList,PMD,ModuleStates):
+def PMDnowSlideImage(filename,ColorList,PMD,ModuleStates):
     global draw,SlideCellWidth ,MixerLineWidth
     MixerColorList,ReagentColorDict = ColorList
     grid,img = genSlideGrid(PMD)
@@ -249,21 +249,21 @@ def PMDSlideImage(filename,ColorList,PMD,ModuleStates):
     img.save(path)
 
 # 混合手順が全て求め終わってから，混合プロセスをタイムステップ毎に図にする
-def ProcessSlideImage(filename,ColorList,PMD,Mixer,ModuleStates):
+def ResultSlideImage(filename,ColorList,TimeStep,FlushCount,PMDsimulation,PMDGeneralInfo,Mixer,ModuleStates):
     global SlideCellWidth,draw,blank,MixerLineWidth
     MixerColorList,ReagentColorDict = ColorList
     SlideCellWidth = 40
-    grid,img = genSlideGrid(PMD)
+    grid,img = genSlideGrid(PMDGeneralInfo)
     draw = ImageDraw.Draw(img)
     drop = []
-    for i in range(PMD.pmdVsize): 
-        for j in range(PMD.pmdHsize): 
-            if PMD[i][j] == 0: 
+    for i in range(PMDGeneralInfo.pmdVsize): 
+        for j in range(PMDGeneralInfo.pmdHsize): 
+            if PMDsimulation[i][j] == 0: 
                 continue 
-            elif PMD[i][j] <0:
+            elif PMDsimulation[i][j] <0:
                 name = "" 
                 color = "" 
-                hash = abs(PMD[i][j])
+                hash = abs(PMDsimulation[i][j])
                 if ModuleStates.ModuleInfo[str(hash)].kind == "Mixer": 
                     idx = int(ModuleStates.ModuleInfo[str(hash)].name[1:])
                     #name = "d"+str(idx)
@@ -314,10 +314,10 @@ def ProcessSlideImage(filename,ColorList,PMD,Mixer,ModuleStates):
         draw.text(((fromx+tox)//2-12-mdf,(fromy+toy)//2-13-mdf),Module.name[1:],font=font,fill="Black")
         
 
-    S = "T={},F={}".format(PMD.TimeStep,PMD.FlushCount)
+    S = "T={},F={}".format(TimeStep,FlushCount)
     fontsize = 40
     font = ImageFont.truetype("Times New Roman.ttf", fontsize)
-    draw.text((0,PMD.pmdHsize*SlideCellWidth+blank),S,font=font,fill="Black")
+    draw.text((0,PMDGeneralInfo.pmdHsize*SlideCellWidth+blank),S,font=font,fill="Black")
     #2*sep*PMD.pmdHsize+2*Width-(fontsize*10)
     create_directory("image")
     path = Path("image/","result"+filename+".png")
