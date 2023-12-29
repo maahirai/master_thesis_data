@@ -16,16 +16,13 @@ class SlideCell:
     global draw,SlideCellWidth,blank
     def __init__(self,y,x,color="",state=""): 
         self.color = color if color else "White"
-        #self.color = color if color else "Gainsboro"
         self.state = state if state else ""
         draw.rectangle([(x,y),(x+SlideCellWidth,y+SlideCellWidth)],fill = self.color,outline="Black")
         dropfontsize = 15
         dropfont = ImageFont.truetype("Times New Roman.ttf", dropfontsize)
         fromy,fromx = x+sep,y+sep 
         toy,tox = fromy+Width,fromx+Width
-        #draw.text(((fromx+tox)//2-11,(fromy+toy)//2-9),Translate(self.state),font=dropfont,fill="Black")
         
-        # starty,startx,endy,endx
         self.sy = y
         self.sx = x 
         self.ey = y+SlideCellWidth
@@ -48,7 +45,6 @@ class SlideCell:
         dropfont = ImageFont.truetype("Times New Roman.ttf", dropfontsize)
         fromy,fromx = self.sy,self.sx
         toy,tox = fromy+SlideCellWidth,fromx+SlideCellWidth
-        #draw.text(((fromx+tox)//2-11,(fromy+toy)//2-9),Translate(self.state),font=dropfont,fill="Black")
         draw.text(((fromx+tox)//2-9,(fromy+toy)//2-9),self.state,font=dropfont,fill="Black")
 
 SlideCellWidth,blank =40,10
@@ -136,20 +132,14 @@ def PMDnowSlideImage(filename,ColorList,PMD,ModuleStates):
 
                 if ModuleStates.ModuleInfo[str(hash)].kind == "Mixer": 
                     idx = int(ModuleStates.ModuleInfo[str(hash)].name[1:])
-                    #name = "d"+str(idx)
                     color = MixerColorList[idx]
                 else : 
                     key = ModuleStates.ModuleInfo[str(hash)].name 
                     if key[0] == "M":
                         print("バグってる",key,ModuleStates.ModuleInfo[str(hash)].ProvNum,ModuleStates.ModuleInfo[str(hash)].size,ModuleStates.ModuleInfo[str(hash)].kind)
-                    #color = "Gainsboro"
                     color = ReagentColorDict[key]
                     ### 何も書かない
                     name = ""
-                #draw.rounded_rectangle([(fromx,fromy),(tox,toy)],radius = 5,fill = color,outline = 'Black',Width=3) 
-                #fromy,fromx = (2*i+1)*sep,(2*j+1)*sep
-                #toy,tox = fromy+Width,fromx+Width
-                #draw.rectangle([(fromx,fromy),(tox,toy)],fill = color,outline = 'Black',width=3)
                 grid[i][j].change(color,name)
 
             elif PMD.State[i][j] > 0 :
@@ -183,16 +173,9 @@ def PMDnowSlideImage(filename,ColorList,PMD,ModuleStates):
 
                     fromy,fromx =grid[sy][sx].sy ,grid[sy][sx].sx
                     toy,tox = grid[ey][ex].ey,grid[ey][ex].ex
-                    #w = 10
-                    #half = w//2
-                    #draw.rounded_rectangle([(fromx+1,fromy+1),(tox-1,toy-1)],radius = 15,outline = color,width=10)
 
                     lines = getOutlineOfMixerShape(cells,grid)
                     draw.line(lines,fill=color,width=MixerLineWidth,joint="curve")
-                    #draw.polygon(coords,outline=color)
-                    fontsize = 16
-                    font = ImageFont.truetype("Times New Roman.ttf", fontsize)
-                    #draw.text(((fromx+tox)//2-8,(fromy+toy)//2-10),Node.name[1:],font=font,fill="Black")
 
             for hash in ModuleStates.ModulesStatesAt["MixerOnPMD"]: 
                 Module = ModuleStates.ModuleInfo[str(hash)]
@@ -207,8 +190,6 @@ def PMDnowSlideImage(filename,ColorList,PMD,ModuleStates):
                     MixerIdx = int(Module.name[1:]) 
                     color = MixerColorList[MixerIdx] 
                     cells = Module.CoveringCell
-                    #sy,sx  = Module.RefCell 
-                    #ey,ex = cells[len(cells)-1]
                     LeftTopCell,RightBottomCell = getMixerGeneralForm(cells)
                     sy,sx  = LeftTopCell
                     ey,ex = RightBottomCell
@@ -220,7 +201,6 @@ def PMDnowSlideImage(filename,ColorList,PMD,ModuleStates):
                     ### 見やすく
                     cx,cy = (tox+fromx)//2,(fromy+toy)//2
                     mdf = 4
-                    #fontsize = 16
                     fontsize = 32
                     div = 2.1
                     
@@ -228,10 +208,7 @@ def PMDnowSlideImage(filename,ColorList,PMD,ModuleStates):
 
                     lines = getOutlineOfMixerShape(cells,grid)
                     draw.line(lines,fill=color,width=MixerLineWidth,joint="curve")
-                    #draw.polygon(coords,outline=color)
-                    #draw.rounded_rectangle([(fromx+1,fromy+1),(tox-1,toy-1)],radius = 15,outline = color,width=10)
                     font = ImageFont.truetype("Times New Roman.ttf", fontsize)
-                    # 概形を求め，それで代用する
                     draw.text(((fromx+tox)//2-12-mdf,(fromy+toy)//2-13-mdf),Module.name[1:],font=font,fill="Black")
                     
                     mix = True
@@ -266,19 +243,12 @@ def ResultSlideImage(filename,ColorList,TimeStep,FlushCount,PMDsimulation,PMDGen
                 hash = abs(PMDsimulation[i][j])
                 if ModuleStates.ModuleInfo[str(hash)].kind == "Mixer": 
                     idx = int(ModuleStates.ModuleInfo[str(hash)].name[1:])
-                    #name = "d"+str(idx)
                     color = MixerColorList[idx]
                 else : 
                     key = ModuleStates.ModuleInfo[str(hash)].name
-                    #color = "Gainsboro"
                     color = ReagentColorDict[key]
                     ### 何も書かない
                     name = ""
-                    #color = "White"
-                #draw.rounded_rectangle([(fromx,fromy),(tox,toy)],radius = 5,fill = color,outline = 'Black',Width=3) 
-                #fromy,fromx = (2*i+1)*sep,(2*j+1)*sep
-                #toy,tox = fromy+Width,fromx+Width
-                #draw.rectangle([(fromx,fromy),(tox,toy)],fill = color,outline = 'Black',width=3)
                 grid[i][j].change(color,name)
 
     for hash in Mixer:
@@ -294,7 +264,6 @@ def ResultSlideImage(filename,ColorList,TimeStep,FlushCount,PMDsimulation,PMDGen
         fromy,fromx =grid[sy][sx].sy ,grid[sy][sx].sx
         toy,tox = grid[ey][ex].ey,grid[ey][ex].ex
         ### 見やすく
-        #fontsize = 16
         fontsize = 32
         mdf = 4
         div = 2.1
@@ -303,14 +272,11 @@ def ResultSlideImage(filename,ColorList,TimeStep,FlushCount,PMDsimulation,PMDGen
 
         lines = getOutlineOfMixerShape(cells,grid)
         draw.line(lines,fill=color,width=MixerLineWidth,joint="curve")
-        #draw.rounded_rectangle([(fromx+1,fromy+1),(tox-1,toy-1)],radius = 15,outline = color,width=10)
         font = ImageFont.truetype("Times New Roman.ttf", fontsize)
        
         tri_x,tri_y= cx+SlideCellWidth//2,(fromy+toy)//2
-        #draw.arc([(cx-SlideCellWidth//2,cy-SlideCellWidth//3),(cx+SlideCellWidth//2,cy+SlideCellWidth//3)],30,0,fill="Black",width=3)
         draw.regular_polygon((tri_x,tri_y,(9)),3,rotation=75,fill="Black")
         draw.arc([(cx-SlideCellWidth//2,cy-SlideCellWidth//2),(cx+SlideCellWidth//2,cy+SlideCellWidth//2)],30,0,fill="Black",width=3)
-        #draw.text(((fromx+tox)//2-10,(fromy+toy)//2-12),Translate(Node.name),font=font,fill="Black")
         draw.text(((fromx+tox)//2-12-mdf,(fromy+toy)//2-13-mdf),Module.name[1:],font=font,fill="Black")
         
 
@@ -318,7 +284,6 @@ def ResultSlideImage(filename,ColorList,TimeStep,FlushCount,PMDsimulation,PMDGen
     fontsize = 40
     font = ImageFont.truetype("Times New Roman.ttf", fontsize)
     draw.text((0,PMDGeneralInfo.pmdHsize*SlideCellWidth+blank),S,font=font,fill="Black")
-    #2*sep*PMD.pmdHsize+2*Width-(fontsize*10)
     create_directory("image")
     path = Path("image/","result"+filename+".png")
     img.save(path)
