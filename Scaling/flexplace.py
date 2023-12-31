@@ -278,6 +278,8 @@ def getProvCellsAlt(InterSectionCells,ProvNum):
 
 class EdgeManagement: 
     def __init__(self): 
+        # ミキサーの配置セルに，他のミキサーの提供液滴配置セルがある場合，そのミキサーよりも先に混合する必要がある．
+        # 混合順を表すために，そのエッジへとOutEdgeを張る．
         self.InEdge = []
         self.OutEdge = []
 
@@ -289,29 +291,74 @@ class Placement:
         self.FlushCell = FlushCell 
     def show(self): 
             # 必要ならあとで書く
-        print("MixerHash:",self.hash)
+        print("Hash:",self.hash)
         print("CoveringCell:",self.CoveringCell)
         print("ProvCell:",self.ProvCell,"\n")
 
 class Layout: 
-    def __init__(self,PMixerCells,MixingOrder): 
+    def __init__(self,PMixerCells,CorrectMixingOrder): 
         global PMD
         self.Placements = []
         self.RestProvCell = copy.deepcopy(PMixerCells)
         self.PMD = copy.deepcopy(PMD)
-        self.MixingOrder = copy.deepcopy(MixingOrder)
-
-    def MixingOrderSolver(self):
-        for mhash in self.MixingOrder:
-            #if ModuleStatesnow[mhash].
-            # 必要ならあとで書く
-            return 
+        self.CorrectMixingOrder = copy.deepcopy(CorrectMixingOrder)
     
+    # オーバーラップの状況から兄弟ミキサーの混合順を求める
+    def IsMixableInECNOrder(self):
+        Stage = self.getStage()
+        if Stage: 
+            return True 
+        else : 
+            return False
+
+    # オーバーラップの状況から兄弟ミキサーの混合順を求める
+    def getStage(self):
+        Graph = {}
+        StageManage = {}
+        for hash in self.CorrectMixingOrder: 
+            Graph[str(hash)] = EdgeManagement()
+            StageManage[str(hash)] = -1
+        for placement in self.Placements:
+            MixerHash = placement.hash
+            for cell in placement.CoveringCell: 
+                y,x = cell 
+                for OverlappingHash in self.PMD.RegisteredAsProvCell[y][x]: 
+                    if MixerHash != OverlappingHash and OverlappingHash in self.CorrectMixingOrder:   
+                        Graph[str(MixerHash)].OutEdge.append(OverlappingHash)
+                        Graph[str(OverlappingHash)].InEdge.append(MixerHash)
+        for hash in self.CorrectMixingOrder: 
+            WhichStage = 0
+            for brotherHash in Graph[str(hash)].InEdge:
+                if brotherHash in Graph[str(hash)].InEdge and brotherHash in Graph[str(hash)].OutEdge:
+                    # デッドロックが発生している
+                    return {}
+                elif StageManage[str(brotherHash)] == -1:
+                    # このレイアウトを採用した場合，混合順が入れ替わることになる
+                    return {}
+                else : 
+                    WhichStage = max(WhichStage,StageManage[str(brotherHash)]+1)
+            StageManage[str(hash)] = WhichStage 
+        return StageManage
+
+    def eval(self):
+        return 1
+
     def show(self): 
         for placement in self.Placements:
             placement.show() 
         print("残った提供セルは",self.RestProvCell)
-        
+        print("正しい混合順は",self.CorrectMixingOrder)
+
+    def IFNum(self):
+        global ModuleStates,PMD
+        Stage = self.getStage()
+        maxStage = 0
+        if Stage: 
+            for hash in self.CorrectMixingOrder: 
+                maxStage = max(Stage[str(hash)],maxStage)
+            return maxStage 
+        else : 
+            return -1
 
 # 親ミキサーの配置場所を仮決めして引数に与えた場合，
 # その子のモジュールはどのようなレイアウトを取ることができるか探索する．
@@ -377,7 +424,7 @@ def getChildrenLayoutAlt(PMixerCellsAlt,PMixerHash):
                                             for cell in provcells: 
                                                 y,x = cell 
                                                 for mhash in LayoutProcess.PMD.RegisteredAsPlacementCell[y][x]: 
-                                                    if (mhash in suspicion) and ( ModuleStates.getModule(mhash).state != "PlacementSkipped" ): 
+                                                    if (mhash in suspicion) and (ModuleStates.getModule(mhash).state != "PlacementSkipped" ): 
                                                         # AかつBの関係になる様なミキサーの内，
                                                         # 相手が配置されている(ECNのより大きい部分木に属する)ミキサーならデッドロックが発生
                                                         Pass = False
@@ -404,6 +451,7 @@ def getChildrenLayoutAlt(PMixerCellsAlt,PMixerHash):
                                                     y,x = cell
                                                     LayoutProcess.PMD.RegisteredAsProvCell[y][x].append(chash)
                                                     LayoutProcess.RestProvCell.remove((y,x))
+                                                # Placementのインスタンス生成のために必要やから作ってる
                                                 flushcells = []
                                                 for mixercell in CMixerCellsAlt: 
                                                     y,x = mixercell
@@ -429,11 +477,8 @@ def getChildrenLayoutAlt(PMixerCellsAlt,PMixerHash):
                 placement = Placement(chash,CoveringCells,ProvCells,FlushCells)
                 LayoutProcess.Placements.append(placement)
                 GeneratingLayouts[Childidx+1].append(LayoutProcess)
-    res = []
-    # データを返り値の形式に直す
-    for layout in GeneratingLayouts[len(PMixer.ChildrenHash)]:
-        res.append(layout.Placements) 
-    return res
+
+    return GeneratingLayouts[len(PMixer.ChildrenHash)]
 
 
 MixerShapeKind = ["Rectangle","LShaped"]
@@ -515,14 +560,19 @@ def PlaceChildren(ParentMixerHash):
     IsNoFlusing = False
     for LayoutAlt in ChildrenLayoutAlt: 
         # レイアウトの評価式，あとで書く
-        EvalV = 1
-        #EvalV = EvalLayout(LayoutAlt)
-        Layout.append((EvalV,LayoutAlt))
+        if LayoutAlt.IsMixableInECNOrder():
+            EvalV = 1
+        # どれくらいのフラッシングが必要か
+        # 混合順がECN順か
+        #EvalV = LayoutAlt.eval()
+            Layout.append((EvalV,LayoutAlt))
+        else : 
+            LayoutAlt.show()
     Placed = False
     for evalv,layout in sorted(Layout,reverse=True,key=lambda x:x[0]):
         if Placed: 
             continue
-        for placement in layout: 
+        for placement in layout.Placements: 
             if ModuleStates.getModule(placement.hash).IsMixer():
                 PlaceMixer(placement.hash,placement.CoveringCell,placement.ProvCell)
                 #　評価値でどのレイアウトで配置するか選択せなあかんけど，あとで書く
@@ -736,12 +786,12 @@ def SamplePreparation(root,PMDsize,ColorList=None,IsScalingUsable=False,ProcessO
         #　ここまでに配置してきたミキサーで混合を行う．
         ChangedTimeStep = False 
         if CannotDoAnything: 
-            print("にゃん",ModuleStates.ModulesStatesAt)
+            #print("にゃん",ModuleStates.ModulesStatesAt)
             for MixerHash in ModuleStates.ModulesStatesAt["MixerOnPMD"]: 
-                print("長さ",len(ModuleStates.ModulesStatesAt["MixerOnPMD"]))
+                #print("長さ",len(ModuleStates.ModulesStatesAt["MixerOnPMD"]))
                 mixer = ModuleStates.getModule(MixerHash)
                 isReadyForMixing = True 
-                print(mixer.hash,mixer.ChildrenHash,"これが親子")
+                #print(mixer.hash,mixer.ChildrenHash,"これが親子")
                 for ChildHash in mixer.ChildrenHash:
                     if ModuleStates.getModule(ChildHash).state != "ProvidingFluids": 
                        isReadyForMixing = False 
@@ -751,11 +801,8 @@ def SamplePreparation(root,PMDsize,ColorList=None,IsScalingUsable=False,ProcessO
                         ChangedTimeStep = True 
                         PMD.TimeStep += 1
                     Mix(MixerHash)
-                #else : 
-                #    print("飛ばされた?",MixerHash)
-                #    continue 
-            print("\n")
-
+                else : 
+                    continue 
         
         # 3. 1,2番に該当するミキサーがなければ，フラッシング.PlacementSkippedを配置できるなら配置．
         if CannotDoAnything: 
