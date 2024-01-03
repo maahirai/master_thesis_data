@@ -85,13 +85,18 @@ class Module:
 
     # Hashに紐づけられたモジュールのECNの大きい順に並び替えて，ChildrenHashを返す.
     def ChildrenHashSortedByECN(self):
-        global ModuleStates
+        global ModuleStates 
+        INF = 1000000
         l = []
         for ChildHash in self.ChildrenHash:
             child = ModuleStates.getModule(ChildHash)
             ecn = 0 
             if child.IsMixer():
-                ecn = child.EstimateCelluseNum()
+                # 親と子ミキササイズによるが，あとで書く
+                if child.ProvNum > 2 and child.ProvNum % 2:
+                    ecn += INF 
+                else : 
+                    ecn = child.EstimateCelluseNum()
             else: 
                 # 試薬液滴は配置方法に融通が効きやすいから，後の方に配置場所を決めたい．
                 ecn = child.EstimateCelluseNum()/1000
@@ -201,80 +206,85 @@ def swap(x,y):
 # 二つのミキサーが共有しているセルから，ProvNum個分の提供液滴を渡すセルの候補を探索する．
 def getProvCellsAlt(InterSectionCells,ProvNum):
     CornerCells = getCornerCells(InterSectionCells) 
-    # 左右，上下どの角かを判別する．
-    # 左上の角なら，右下 or 下右に移動できる．
-    dy,dx = [0,1,0,-1],[-1,0,1,0] 
-    AvailableWay = []
-    for cell in CornerCells: 
-        available = []
-        y,x = cell 
-        for way in range(4): 
-            ny,nx = y+dy[way],x+dx[way]
-            if (ny,nx) in InterSectionCells: 
-                available.append(way)
-        res = (cell,available)
-        AvailableWay.append(res)
-    res = []
-    for cell,ways in AvailableWay: 
-        for swapUsual in range(2): 
-            sign = 1
-            Usual,EncounteringWall = None,None 
-            if len(ways)==2:
-                Usual,EncounteringWall = ways
-                if swapUsual: 
-                    Usual,EncounteringWall = swap(Usual,EncounteringWall)
-            elif len(ways)==1: 
-                Usual = ways.pop()
-            else: 
-                continue
-            
-            ProvCells = [cell]
-            WatchingCell = cell
-            while(len(ProvCells)!=ProvNum):
-                y,x = WatchingCell 
-                ny,nx = y+sign*dy[Usual],x+sign*dx[Usual]
-                ncell = (ny,nx)
-                if ncell not in ProvCells: 
-                    if ncell in InterSectionCells: 
-                        ProvCells.append(ncell)
-                        WatchingCell = ncell 
-                    else: 
-                        # 壁にぶつかってみてから，対処として使える道が見つかる場合もある
-                        if EncounteringWall == None: 
-                            SearchDY,SearchDX = False,False
-                            if abs(dy[Usual]): 
-                                SearchDX = True 
-                            else: 
-                                SearchDY = True
-                            for way in range(4): 
-                                # 縦方向の移動を通常しているなら，横方向の移動を壁にぶつかったら行う
-                                if SearchDX : 
-                                    if abs(dx[way]): 
-                                        Alty,Altx = y+dy[way],x+dx[way]
-                                        if (Alty,Altx) in InterSectionCells: 
-                                            EncounteringWall = way
+    if ProvNum == 0 or len(InterSectionCells)==0:
+        print("やってられませんわ")
+    elif len(InterSectionCells) == ProvNum: 
+        return [InterSectionCells]
+    else: 
+        # 左右，上下どの角かを判別する．
+        # 左上の角なら，右下 or 下右に移動できる．
+        dy,dx = [0,1,0,-1],[-1,0,1,0] 
+        AvailableWay = []
+        for cell in CornerCells: 
+            available = []
+            y,x = cell 
+            for way in range(4): 
+                ny,nx = y+dy[way],x+dx[way]
+                if (ny,nx) in InterSectionCells: 
+                    available.append(way)
+            res = (cell,available)
+            AvailableWay.append(res)
+        res = []
+        for cell,ways in AvailableWay: 
+            for swapUsual in range(2): 
+                sign = 1
+                Usual,EncounteringWall = None,None 
+                if len(ways)==2:
+                    Usual,EncounteringWall = ways
+                    if swapUsual: 
+                        Usual,EncounteringWall = swap(Usual,EncounteringWall)
+                elif len(ways)==1: 
+                    Usual = ways.pop()
+                else: 
+                    continue
+                
+                ProvCells = [cell]
+                WatchingCell = cell
+                while(len(ProvCells)!=ProvNum):
+                    y,x = WatchingCell 
+                    ny,nx = y+sign*dy[Usual],x+sign*dx[Usual]
+                    ncell = (ny,nx)
+                    if ncell not in ProvCells: 
+                        if ncell in InterSectionCells: 
+                            ProvCells.append(ncell)
+                            WatchingCell = ncell 
+                        else: 
+                            # 壁にぶつかってみてから，対処として使える道が見つかる場合もある
+                            if EncounteringWall == None: 
+                                SearchDY,SearchDX = False,False
+                                if abs(dy[Usual]): 
+                                    SearchDX = True 
                                 else: 
-                                    if abs(dy[way]): 
-                                        Alty,Altx = y+dy[way],x+dx[way]
-                                        if (Alty,Altx) in InterSectionCells: 
-                                            EncounteringWall = way
-                        # これでもダメなら現在の探索法ではもう無理
-                        if EncounteringWall==None:  
-                            break 
-                        else:
-                            ny,nx = y+dy[EncounteringWall],x+dx[EncounteringWall]
-                            # 蛇のようにくねくねセルを集めるので，
-                            # 壁に当たったら進行方向を逆にするために符号の切り替え
-                            sign *= -1
-                            ncell = (ny,nx)
-                            if ncell not in ProvCells: 
-                                if ncell in InterSectionCells:
-                                    ProvCells.append(ncell)
-                                    WatchingCell = ncell 
-            ProvCells.sort()
-            if len(ProvCells)==ProvNum and ProvCells not in res:
-                res.append(ProvCells) 
-    return res
+                                    SearchDY = True
+                                for way in range(4): 
+                                    # 縦方向の移動を通常しているなら，横方向の移動を壁にぶつかったら行う
+                                    if SearchDX : 
+                                        if abs(dx[way]): 
+                                            Alty,Altx = y+dy[way],x+dx[way]
+                                            if (Alty,Altx) in InterSectionCells: 
+                                                EncounteringWall = way
+                                    else: 
+                                        if abs(dy[way]): 
+                                            Alty,Altx = y+dy[way],x+dx[way]
+                                            if (Alty,Altx) in InterSectionCells: 
+                                                EncounteringWall = way
+                            # これでもダメなら現在の探索法ではもう無理
+                            if EncounteringWall==None:  
+                                break 
+                            else:
+                                ny,nx = y+dy[EncounteringWall],x+dx[EncounteringWall]
+                                # 蛇のようにくねくねセルを集めるので，
+                                # 壁に当たったら進行方向を逆にするために符号の切り替え
+                                sign *= -1
+                                ncell = (ny,nx)
+                                if ncell not in ProvCells: 
+                                    if ncell in InterSectionCells:
+                                        ProvCells.append(ncell)
+                                        WatchingCell = ncell 
+                ProvCells.sort()
+                if len(ProvCells)==ProvNum and ProvCells not in res:
+                    res.append(ProvCells) 
+        return res
 
 class EdgeManagement: 
     def __init__(self): 
@@ -292,15 +302,27 @@ class Placement:
     def show(self): 
             # 必要ならあとで書く
         print("Hash:",self.hash)
-        print("CoveringCell:",self.CoveringCell)
-        print("ProvCell:",self.ProvCell,"\n")
+        print("CoveringCell:",end="")
+        printCells(self.CoveringCell)
+        print("ProvCell:",end="")
+        printCells(self.ProvCell)
+
+def printCells(cells):
+    print("(x,y)=",end="")
+    mdfcells = []
+    for cell in cells : 
+        y,x = cell
+        mdfcells.append((x,y))
+    for cell in sorted(mdfcells):
+        x,y = cell
+        print(" ({},{}),".format(x,y),end="")
+    print("\n")
 
 class Layout: 
-    def __init__(self,PMixerCells,CorrectMixingOrder): 
-        global PMD
-        self.Placements = []
-        self.RestProvCell = copy.deepcopy(PMixerCells)
+    def __init__(self,PMD,PMixerCells,CorrectMixingOrder): 
+        self.Placements = {}
         self.PMD = copy.deepcopy(PMD)
+        self.RestProvCell = copy.deepcopy(PMixerCells)
         self.CorrectMixingOrder = copy.deepcopy(CorrectMixingOrder)
     
     # オーバーラップの状況から兄弟ミキサーの混合順を求める
@@ -318,34 +340,58 @@ class Layout:
         for hash in self.CorrectMixingOrder: 
             Graph[str(hash)] = EdgeManagement()
             StageManage[str(hash)] = -1
-        for placement in self.Placements:
-            MixerHash = placement.hash
+        for hash in self.CorrectMixingOrder: 
+            placement = self.Placements[str(hash)]
             for cell in placement.CoveringCell: 
                 y,x = cell 
                 for OverlappingHash in self.PMD.RegisteredAsProvCell[y][x]: 
-                    if MixerHash != OverlappingHash and OverlappingHash in self.CorrectMixingOrder:   
-                        Graph[str(MixerHash)].OutEdge.append(OverlappingHash)
-                        Graph[str(OverlappingHash)].InEdge.append(MixerHash)
+                    if hash != OverlappingHash and OverlappingHash in self.CorrectMixingOrder:   
+                        Graph[str(hash)].OutEdge.append(OverlappingHash)
+                        Graph[str(OverlappingHash)].InEdge.append(hash)
         for hash in self.CorrectMixingOrder: 
             WhichStage = 0
             for brotherHash in Graph[str(hash)].InEdge:
-                if brotherHash in Graph[str(hash)].InEdge and brotherHash in Graph[str(hash)].OutEdge:
-                    # デッドロックが発生している
+                if brotherHash in Graph[str(hash)].OutEdge:
+                    # 両方にエッジが張られていて，ループが発生している
+                    # →デッドロックが発生している
                     return {}
                 elif StageManage[str(brotherHash)] == -1:
                     # このレイアウトを採用した場合，混合順が入れ替わることになる
+                    continue
                     return {}
                 else : 
                     WhichStage = max(WhichStage,StageManage[str(brotherHash)]+1)
             StageManage[str(hash)] = WhichStage 
+            print("デッドロック以外もある")
         return StageManage
+    
+    def getMaxStage(self,stage): 
+        MaxStage = -1
+        for v in stage.values(): 
+            MaxStage = max(v,MaxStage) 
+        return MaxStage
 
     def eval(self):
-        return 1
+        global ModuleStates
+        score = 0
+        stage = self.getStage()
+        NeedFlushNum = self.getMaxStage(stage)
+        # 現在置かれている，兄弟以外のミキサーとのオーバーラップをチェック 
+        # オーバーラップをしている場合，その対象ミキサーの
+        # 先祖ミキサー&自身の先祖ミキサーの子ミキサーであるミキサーの提供液滴配置セルとオーバーラップがあれば配置不可．
+        for hash in self.CorrectMixingOrder: 
+            if ModuleStates.getModule(hash).IsMixer():
+                placement = self.Placements[str(hash)]
+                tmpPMD = copy.deepcopy(self.PMD)
+                # 仮置き
+                tmpPMD = self.TemporalyPlaceMixer(tmpPMD,placement)
+                GrandchildLayoutAlt = getChildrenLayoutAlt(tmpPMD,placement.CoveringCell,hash)
+                score += len(GrandchildLayoutAlt)/(NeedFlushNum+1) 
+        return score
 
     def show(self): 
-        for placement in self.Placements:
-            placement.show() 
+        for hash in self.CorrectMixingOrder:
+            self.Placements[str(hash)].show() 
         print("残った提供セルは",self.RestProvCell)
         print("正しい混合順は",self.CorrectMixingOrder)
 
@@ -359,17 +405,55 @@ class Layout:
             return maxStage 
         else : 
             return -1
+    
+    def TemporalyPlaceMixer(self,PMD,placement):
+        global ModuleStates,StateTransitions
+        for cell in placement.ProvCell: 
+            y,x = cell
+            PMD.RegisteredAsProvCell[y][x].append(placement.hash)
+        for cell in placement.CoveringCell: 
+            y,x = cell 
+            PMD.RegisteredAsPlacementCell[y][x].append(placement.hash) 
+            PMD.State[y][x] = placement.hash
+        return PMD
+
+def getMyAncestor(ParentHash,MyAncestorHashes): 
+    global ModuleStates 
+    for chash in ModuleStates.getModule(ParentHash).ChildrenHash: 
+        if chash in MyAncestorHashes:
+            return chash
+
+def PlaceMixer(MixerHash,PlacedCells,ProvCell):
+    #print("どやさ！",MixerHash,PlacedCells,ProvCell)
+    global PMD,ModuleStates,StateTransitions
+    for cell in ProvCell: 
+        y,x = cell
+        PMD.RegisteredAsProvCell[y][x].append(MixerHash)
+    for cell in PlacedCells: 
+        y,x = cell 
+        PMD.RegisteredAsPlacementCell[y][x].append(MixerHash) 
+        PMD.State[y][x] = MixerHash
+    ModuleStates.ModuleInfo[str(MixerHash)].CoveringCell = PlacedCells
+    ModuleStates.ModuleInfo[str(MixerHash)].ProvCell = ProvCell 
+    for cell in PlacedCells: 
+        if cell not in ProvCell:
+            ModuleStates.ModuleInfo[str(MixerHash)].FlushCell.append(cell)
+    # 状態遷移
+    StateTransitions.append(ModuleStates.ModuleInfo[str(MixerHash)].MixerOnPMD)
 
 # 親ミキサーの配置場所を仮決めして引数に与えた場合，
 # その子のモジュールはどのようなレイアウトを取ることができるか探索する．
-def getChildrenLayoutAlt(PMixerCellsAlt,PMixerHash):
-    global PMD,ModuleStates,MixerShapeKind
+
+# 孫ミキサー（子ミキサーの子）のレイアウト個数を数え上げさせる場合があるので，
+# この関数がPMDの状態はglobalのPMDとは異なる場合もある
+def getChildrenLayoutAlt(PMD,PMixerCellsAlt,PMixerHash):
+    global ModuleStates,MixerShapeKind
 
     PMixer = ModuleStates.getModule(PMixerHash)
     # ECNのおかげで，ミキサー→試薬の順番で配置場所を探索できる．
     # 試薬は，余ってる提供セルを適当に割り当てる. 
     GeneratingLayouts = [[] for i in range(len(PMixer.ChildrenHash)+1)]
-    LayoutSeed = Layout(PMixerCellsAlt,PMixer.ChildrenHashSortedByECN())
+    LayoutSeed = Layout(PMD,PMixerCellsAlt,PMixer.ChildrenHashSortedByECN())
     GeneratingLayouts[0].append(LayoutSeed)
     for Childidx,chash in enumerate(PMixer.ChildrenHashSortedByECN()):
         child = ModuleStates.getModule(chash)
@@ -404,6 +488,7 @@ def getChildrenLayoutAlt(PMixerCellsAlt,PMixerHash):
                                         for provcells in ProvCellsAlt:
                                             # 適当に提供液滴の配置パターンを書き出してみただけやから，
                                             # それが使えるのか逐一チェックする必要あり.Passが真のままなら合格
+                                            # 枝切りの役割も兼ねる
                                             Pass = True
                                             LayoutProcess= copy.deepcopy(layout)
                                             for cell in provcells: 
@@ -411,40 +496,44 @@ def getChildrenLayoutAlt(PMixerCellsAlt,PMixerHash):
                                                 # 提供液滴の配置セルが他の兄弟ミキサーにもう取られているかのチェック
                                                 if cell not in LayoutProcess.RestProvCell:
                                                     Pass = False 
-                                            # 本格的なチェックを行い，有効なレイアウトか確認する.チェック項目は以下の通り．
-                                                # デッドロックが発生していないか
-                                                ## まずは，配置セルに提供液滴を配置する他のミキサーの内，先祖ミキサーでないもの(A)を調査
-                                            suspicion = []
-                                            for cell in CMixerCellsAlt: 
-                                                y,x = cell
-                                                for mhash in LayoutProcess.PMD.RegisteredAsProvCell[y][x]: 
-                                                    if mhash not in child.AncestorHash: 
-                                                        suspicion.append(mhash) 
-                                            ## 逆に，提供液滴を配置するセルに配置される他のミキサーで，先祖ミキサーでないもの(B)を調査
-                                            for cell in provcells: 
-                                                y,x = cell 
-                                                for mhash in LayoutProcess.PMD.RegisteredAsPlacementCell[y][x]: 
-                                                    if (mhash in suspicion) and (ModuleStates.getModule(mhash).state != "PlacementSkipped" ): 
-                                                        # AかつBの関係になる様なミキサーの内，
-                                                        # 相手が配置されている(ECNのより大きい部分木に属する)ミキサーならデッドロックが発生
-                                                        Pass = False
+                                           # # 本格的なチェックを行い，有効なレイアウトか確認する.チェック項目は以下の通り．
+                                           #     # デッドロックが発生していないか
+                                           #     ## まずは，配置セルに提供液滴を配置する他のミキサーの内，先祖ミキサーでないもの(A)を調査
+                                           # suspicion = []
+                                           # for cell in CMixerCellsAlt: 
+                                           #     y,x = cell
+                                           #     for mhash in LayoutProcess.PMD.RegisteredAsProvCell[y][x]: 
+                                           #         if mhash not in child.AncestorHash: 
+                                           #             suspicion.append(mhash) 
+                                           # ## 逆に，提供液滴を配置するセルに配置される他のミキサーで，先祖ミキサーでないもの(B)を調査
+                                           # for cell in provcells: 
+                                           #     y,x = cell 
+                                           #     for mhash in LayoutProcess.PMD.RegisteredAsPlacementCell[y][x]: 
+                                           #         if (mhash in suspicion) and (ModuleStates.getModule(mhash).state != "PlacementSkipped" ): 
+                                           #             # AかつBの関係になる様なミキサーの内，
+                                           #             # 相手が配置されている(ECNのより大きい部分木に属する)ミキサーならデッドロックが発生
+                                           #             Pass = False
                                             # 先祖の子だが，自身の先祖には含まれず，自身の先祖よりECNの大きいミキサーの提供液滴に
-                                            ##オーバーラップしていないかのチェック
-                                            for cell in CMixerCellsAlt: 
-                                                y,x = cell 
-                                                for mhash in LayoutProcess.PMD.RegisteredAsProvCell[y][x]: 
-                                                    if mhash not in child.AncestorHash and ModuleStates.getModule(mhash).ParentHash in child.AncestorHash:
-                                                        if ModuleStates.getModule(mhash).state != "PlacementSkipped" : 
-                                                            Pass = False  
-                                            # 兄弟ミキサーとのオーバーラップが発生している場合，混合順はECN順になるか?
-                                            suspicion = []
-                                            for cell in CMixerCellsAlt: 
-                                                y,x = cell 
-                                                # 配置セル内に，兄弟ミキサー(自分よりECNが大きい)の提供セルがある場合，
-                                                # 自分の方がミキサーを先に混合する必要が出る．それはECNの概念に矛盾するので不合格．
-                                                for mhash in LayoutProcess.PMD.RegisteredAsProvCell[y][x]: 
-                                                    if mhash in PMixer.ChildrenHash:
-                                                        Pass = False 
+                                            #オーバーラップしていないかのチェック
+                                            #for cell in CMixerCellsAlt: 
+                                            #    y,x = cell 
+                                            #    for mhash in LayoutProcess.PMD.RegisteredAsProvCell[y][x]: 
+                                            #        if mhash not in child.AncestorHash and ModuleStates.getModule(mhash).ParentHash in child.AncestorHash and ModuleStates.getModule(mhash).ParentHash != child.ParentHash:
+                                            #            MyAncestorHash = getMyAncestor(ModuleStates.getModule(mhash).ParentHash,child.AncestorHash)
+                                            #            TheirParent = ModuleStates.getModule(mhash)
+                                            #            CmpPosition = TheirParent.ChildrenHash.index(mhash)
+                                            #            MyAncestorPosition = TheirParent.ChildrenHash.index(MyAncestorHash)
+                                            #            if CmpPosition < MyAncestorPosition: 
+                                            #                Pass = False  
+                                            ## 兄弟ミキサーとのオーバーラップが発生している場合，混合順はECN順になるか?
+                                            #suspicion = []
+                                            #for cell in CMixerCellsAlt: 
+                                            #    y,x = cell 
+                                            #    # 配置セル内に，兄弟ミキサー(自分よりECNが大きい)の提供セルがある場合，
+                                            #    # 自分の方がミキサーを先に混合する必要が出る．それはECNの概念に矛盾するので不合格．
+                                            #    for mhash in LayoutProcess.PMD.RegisteredAsProvCell[y][x]: 
+                                            #        if mhash in PMixer.ChildrenHash:
+                                            #            Pass = False 
                                             # ここまできたら合格なので，次の子モジュールの配置方法の探索に渡す
                                             if Pass:
                                                 for cell in provcells: 
@@ -452,6 +541,7 @@ def getChildrenLayoutAlt(PMixerCellsAlt,PMixerHash):
                                                     LayoutProcess.PMD.RegisteredAsProvCell[y][x].append(chash)
                                                     LayoutProcess.RestProvCell.remove((y,x))
                                                 # Placementのインスタンス生成のために必要やから作ってる
+                                                #print("provcells:{},RestProvCell:{}".format(provcells,LayoutProcess.RestProvCell))
                                                 flushcells = []
                                                 for mixercell in CMixerCellsAlt: 
                                                     y,x = mixercell
@@ -459,7 +549,7 @@ def getChildrenLayoutAlt(PMixerCellsAlt,PMixerHash):
                                                     if mixercell not in provcells: 
                                                         flushcells.append(mixercell) 
                                                 placement = Placement(chash,CMixerCellsAlt,provcells,flushcells)
-                                                LayoutProcess.Placements.append(placement)
+                                                LayoutProcess.Placements[str(chash)] = placement
                                                 # 次の子の配置に回す．
                                                 GeneratingLayouts[Childidx+1].append(LayoutProcess)
             else:
@@ -475,7 +565,7 @@ def getChildrenLayoutAlt(PMixerCellsAlt,PMixerHash):
                     CoveringCells.append((y,x))
                     ProvCells.append((y,x))
                 placement = Placement(chash,CoveringCells,ProvCells,FlushCells)
-                LayoutProcess.Placements.append(placement)
+                LayoutProcess.Placements[str(chash)] = placement
                 GeneratingLayouts[Childidx+1].append(LayoutProcess)
 
     return GeneratingLayouts[len(PMixer.ChildrenHash)]
@@ -507,14 +597,18 @@ def PlaceRootMixer():
                     # mixershapeを(ref_y,ref_x)分平行移動させる．
                     dVdH = (ref_y,ref_x)
                     RootMixerCells = Translation(mixershape,dVdH)
-                    LayoutAlternatives = getChildrenLayoutAlt(RootMixerCells,RootHash)
+                    print(RootMixerCells)
+                    LayoutAlternatives = getChildrenLayoutAlt(PMD,RootMixerCells,RootHash)
                     if len(LayoutAlternatives)>MaxAltnum:
                         MaxAltnum = len(LayoutAlternatives)
                         BestMixerShape = RootMixerCells 
                 else: 
                     continue 
-    # ルートミキサーの提供液滴を無しとした理由は，Goodnotesを参照
-    PlaceMixer(RootHash,BestMixerShape,[])
+    if BestMixerShape == None or MaxAltnum==0: 
+        print("M0，もしくはその子のレイアウト方法が見つかりませんでした．",file=sys.stderr)
+    else : 
+        # ルートミキサーの提供液滴を無しとした理由は，Goodnotesを参照
+        PlaceMixer(RootHash,BestMixerShape,[])
 
 # PMDやミキサの状態の書き換えのための関数
 def PlaceMixer(MixerHash,PlacedCells,ProvCell):
@@ -552,27 +646,49 @@ def PlaceReagent(Hash,PlacedCells,ProvCell):
     StateTransitions.append(ModuleStates.ModuleInfo[str(Hash)].ProvidingFluids)
 
 def PlaceChildren(ParentMixerHash): 
-    global ModuleStates,StateTransitions
+    global PMD,ModuleStates,StateTransitions
     PMixer = ModuleStates.getModule(ParentMixerHash)
-    ChildrenLayoutAlt = getChildrenLayoutAlt(PMixer.CoveringCell,PMixer.hash)
+    ChildrenLayoutAlt = getChildrenLayoutAlt(PMD,PMixer.CoveringCell,PMixer.hash)
 
     Layout= []
     IsNoFlusing = False
     for LayoutAlt in ChildrenLayoutAlt: 
         # レイアウトの評価式，あとで書く
         if LayoutAlt.IsMixableInECNOrder():
-            EvalV = 1
-        # どれくらいのフラッシングが必要か
-        # 混合順がECN順か
-        #EvalV = LayoutAlt.eval()
+            EvalV = LayoutAlt.eval()
+            print("よくやった！！",EvalV)
+            print("よくやった！！",EvalV)
+            print("よくやった！！",EvalV)
+            print("よくやった！！",EvalV)
+            print("よくやった！！",EvalV)
+            print("よくやった！！",EvalV)
+            print("よくやった！！",EvalV)
+            print("よくやった！！",EvalV)
             Layout.append((EvalV,LayoutAlt))
-        else : 
-            LayoutAlt.show()
+       # else : 
+       #     s = {}
+       #     first = True
+       #     for placement in LayoutAlt.Placements.values(): 
+       #         if first : 
+       #             s = set(cell for cell in placement.CoveringCell)
+       #             first = False 
+       #         else: 
+       #             cmps = set(cell for cell in placement.CoveringCell)
+       #             s = s&cmps 
+       #     if len(s)==1:
+       #         print("不適当なレイアウトです")
+       #         LayoutAlt.show()
+       #     else: 
+       #         print(len(s)) 
+       #     print("不適当なレイアウトです")
+       #     LayoutAlt.show()
+    print("あきまへんわ")
     Placed = False
     for evalv,layout in sorted(Layout,reverse=True,key=lambda x:x[0]):
         if Placed: 
             continue
-        for placement in layout.Placements: 
+        for hash in layout.CorrectMixingOrder:
+            placement = layout.Placements[str(hash)]
             if ModuleStates.getModule(placement.hash).IsMixer():
                 PlaceMixer(placement.hash,placement.CoveringCell,placement.ProvCell)
                 #　評価値でどのレイアウトで配置するか選択せなあかんけど，あとで書く
@@ -814,7 +930,7 @@ def SamplePreparation(root,PMDsize,ColorList=None,IsScalingUsable=False,ProcessO
     ## 現時点のPMDの状況で，IFが必要ない子のレイアウトとIFが必要な子のレイアウトを分けて数え上げる．
         
         ExcuteStateTransitions()
-
+    
 
     # 試薬合成完了したので，結果の出力
     if ProcessOutput :
