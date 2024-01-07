@@ -278,6 +278,7 @@ def judgeRatioGroup(node):
                 # 3fluid from 6M を 6Mに提供するときなど，
                 # PMDの状況と親子ミキサーのレイアウトの仕方次第でIF無しでの置き方もある
                 if child.size>=child.provide_vol*2 and node.size>=child.provide_vol*2: 
+                    print(child.name)
                     continue
                 else:
                     IncludeOddRatio = True
@@ -297,27 +298,33 @@ def preLayout_Scaling(root):
     # 葉に近い提供比率である，BFS順において後の方にqueueに入れられた提供比率からスケーリングを行う
     # 但し，queue内の全ての提供比率に対するスケーリングが行えない場合は，
     # 先行して行っていたグル0以外の提供比率のスケーリング分のロールバックを行い，グル0のスケーリングを全て行う．
-    tree = copy.deepcopy(root)
-    q = collectGroup(tree,5,100)
-    for name in reversed(q): 
+    tree = deepcopy(root)
+    ShouldScaleMixerName,ShouldScaleMixerGroups = collectGroup(tree,3,100)
+    ScalingOrder = reversed(ShouldScaleMixerName)
+    for name in ScalingOrder:
         # 適当に全部x2スケ
-        tree = Scaling(tree,name,2)
+        ScaledTree = Scaling(tree,name,2)
+        print(name,"はスケーリングによりグループが",ShouldScaleMixerGroups[name],"→",judgeRatioGroup(getNode(ScaledTree,name)))
+        if judgeRatioGroup(getNode(ScaledTree,name))<=ShouldScaleMixerGroups[name]:
+            tree = ScaledTree
     return tree
 
 # groupiからgroupjの提供比率(i<j,i=0,j=2ならグループ0,1,2)で子から中間液滴を受け取るミキサーノード名の集合を返す
 def collectGroup(root,i,j): 
-    q_group = []
+    ShouldScaleMixerName,ShouldScaleMixerGroups = [],{}
     q = []
     q.append(root)
     while(q):
         node = q.pop()
+        if IsMixerNode(node):
+            group = judgeRatioGroup(node)
+            if i<=group and group<=j:
+                ShouldScaleMixerName.append(node.name)
+                ShouldScaleMixerGroups[node.name] = group
         for child in node.children: 
             if IsMixerNode(child):
-                group = judgeRatioGroup(child)
-                if i<=group and group<=j:
-                    q_group.append(child.name)
                 q.append(child)
-    return q_group
+    return ShouldScaleMixerName,ShouldScaleMixerGroups
 
 # 部分木内のミキサノードの混合に使われるPMDのセル数の上限を計算する. これを使用セル数の推定値とする．
 # PMD上での液滴の混合に使用される試薬液滴の総個数(F=0回の時の使用セル数,使用セル数の最大値)を数え上げる. 

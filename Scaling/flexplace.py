@@ -270,6 +270,7 @@ def getProvCellsAlt(InterSectionCells,ProvNum):
                     continue
                 
                 ProvCells = [cell]
+                y,x = ProvCells[0]
                 WatchingCell = cell
                 while(len(ProvCells)!=ProvNum):
                     y,x = WatchingCell 
@@ -299,10 +300,11 @@ def getProvCellsAlt(InterSectionCells,ProvNum):
                                             Alty,Altx = y+dy[way],x+dx[way]
                                             if (Alty,Altx) in InterSectionCells: 
                                                 EncounteringWall = way
-                            # これでもダメなら現在の探索法ではもう無理
+                            # 一旦探しても曲がる方向が見つからないなら現在の探索法ではもう無理
                             if EncounteringWall==None:  
                                 break 
                             else:
+                                # 曲がる
                                 ny,nx = y+dy[EncounteringWall],x+dx[EncounteringWall]
                                 # 蛇のようにくねくねセルを集めるので，
                                 # 壁に当たったら進行方向を逆にするために符号の切り替え
@@ -312,6 +314,9 @@ def getProvCellsAlt(InterSectionCells,ProvNum):
                                     if ncell in InterSectionCells:
                                         ProvCells.append(ncell)
                                         WatchingCell = ncell 
+                    else : 
+                        # 同じセルを2回参照する場合，今回は無理
+                        break
                 ProvCells.sort()
                 if len(ProvCells)==ProvNum and ProvCells not in res:
                     res.append(ProvCells) 
@@ -412,7 +417,8 @@ class Layout:
             if ModuleStates.getModule(hash).state == "PlacementSkipped":
                 MinLayer = min(MinLayer,self.layer[str(hash)])
         return MinLayer
-
+    
+    # 遅すぎる泣
     def eval(self):
         global ModuleStates
         score = 0
@@ -429,7 +435,13 @@ class Layout:
                 tmpPMD = self.TemporalyPlaceMixer(tmpPMD,placement)
                 GrandchildLayoutAlt = getChildrenLayoutAlt(tmpPMD,placement.CoveringCell,hash)
                 score += len(GrandchildLayoutAlt)/(NeedFlushNum+1) 
-        return score
+        return score 
+
+    def NewEval(self):
+        global ModuleStates
+        layer = self.getLayer()
+        NeedFlushNum = self.getMaxLayer(layer)
+        return 1/(NeedFlushNum+1)
 
     def show(self): 
         for hash in self.CorrectMixingOrder:
@@ -472,10 +484,8 @@ def PlaceModule(placement):
     else : 
         PlaceReagent(placement.hash,placement.CoveringCell,placement.ProvCell)
 
-
 # 親ミキサーの配置場所を仮決めして引数に与えた場合，
 # その子のモジュールはどのようなレイアウトを取ることができるか探索する．
-
 # 孫ミキサー（子ミキサーの子）のレイアウト個数を数え上げさせる場合があるので，
 # この関数がPMDの状態はglobalのPMDとは異なる場合もある
 def getChildrenLayoutAlt(PMD,PMixerCellsAlt,PMixerHash):
@@ -549,8 +559,8 @@ def getChildrenLayoutAlt(PMD,PMixerCellsAlt,PMixerHash):
                                             # 自身の先祖よりECNの小さいモジュールに対しては，もう配置されている提供液滴にオーバーラップしていたらダメ
                                             for cell in CMixerCellsAlt: 
                                                 y,x = cell 
-                                                for hash in LayoutProcess.PMD.RegisteredAsProvCell[y][x]: 
-                                                    if hash not in child.AncestorHash and ModuleStates.getModule(hash).ParentHash in child.AncestorHash and ModuleStates.getModule(mhash).ParentHash != child.ParentHash:
+                                                for mhash in LayoutProcess.PMD.RegisteredAsProvCell[y][x]: 
+                                                    if mhash not in child.AncestorHash and ModuleStates.getModule(mhash).ParentHash in child.AncestorHash and ModuleStates.getModule(mhash).ParentHash != child.ParentHash:
                                                         MyAncestorAndHisBrotherHash = getMyAncestor(ModuleStates.getModule(mhash).ParentHash,child.AncestorHash)
                                                         TheirParent = ModuleStates.getModule(ModuleStates.getModule(mhash).ParentHash)
                                                         CmpPosition = TheirParent.ChildrenHash.index(mhash)
@@ -684,32 +694,17 @@ def PlaceChildren(ParentMixerHash):
     global PMD,ModuleStates,StateTransitions
     PMixer = ModuleStates.getModule(ParentMixerHash)
     ChildrenLayoutAlt = getChildrenLayoutAlt(PMD,PMixer.CoveringCell,PMixer.hash)
-
+    
     Layout= []
     IsNoFlusing = False
     for LayoutAlt in ChildrenLayoutAlt: 
         # レイアウトの評価式，あとで書く
         if LayoutAlt.IsMixableInECNOrder():
-            EvalV = LayoutAlt.eval()
+            # 遅すぎて使い物にならない泣
+            #EvalV = LayoutAlt.eval()
+            EvalV = LayoutAlt.NewEval()
             # print("よくやった！！",EvalV)
             Layout.append((EvalV,LayoutAlt))
-       # else : 
-       #     s = {}
-       #     first = True
-       #     for placement in LayoutAlt.Placements.values(): 
-       #         if first : 
-       #             s = set(cell for cell in placement.CoveringCell)
-       #             first = False 
-       #         else: 
-       #             cmps = set(cell for cell in placement.CoveringCell)
-       #             s = s&cmps 
-       #     if len(s)==1:
-       #         print("不適当なレイアウトです")
-       #         LayoutAlt.show()
-       #     else: 
-       #         print(len(s)) 
-       #     print("不適当なレイアウトです")
-       #     LayoutAlt.show()
 
     # 厳しめにECN順での配置を守る 
     # 同じステージでよりECNの大きいモジュールが配置できない場合，それ以降は全て配置スキップ
@@ -986,9 +981,6 @@ def SamplePreparation(root,PMDsize,ColorList=None,IsScalingUsable=False,ProcessO
                     if layout.layer[str(hash)] == PlacingLayer and ModuleStates.getModule(hash).state == "PlacementSkipped": 
                         if PMD.IsPlacableNow(layout.Placements[str(hash)]):
                             PlaceModule(layout.Placements[str(hash)])
-                        print(layout.Placements[str(hash)].hash)
-                        printCells(layout.Placements[str(hash)].CoveringCell)
-                        printCells(layout.Placements[str(hash)].ProvCell)
                 # PlacementSkippedLayoutから削除すべきか確認
                 IsAllModulePlaced = True
                 for hash in layout.CorrectMixingOrder:

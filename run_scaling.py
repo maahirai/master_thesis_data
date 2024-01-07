@@ -73,8 +73,8 @@ if len(sys.argv) == 4:
 Tree = tree.InputToTree(TREE)
 if color : 
     tree.ColorList = color
-create_directory("image_scaling")
-tree.saveTree(Tree,"image_scaling/Tree"+"slide.png")
+create_directory("image")
+tree.saveTree(Tree,"image/Tree"+"slide.png")
 #TransformedTree = tree.TransformTree(Tree)
 #tree.saveTree(TransformedTree,"image/TransformedTree"+"slide.png")
 ColorList = tree.ColorList 
@@ -101,18 +101,16 @@ formerTree = deepcopy(Tree)
 #        
 #    target = "M{}".format(idx)
 #    formerTree = ScaledTree
-#    ScaledTree = tree.Scaling(ScaledTree,target,scale_factor)
-#
-#    now = datetime.datetime.now()
-#    #tree.saveTree(ScaledTree,"image/ScaledTree"+"{0:%Y-%m-%d %H:%M:%S}".format(now)+"slide.png")
-#    tree.saveTree(ScaledTree,"image/ScaledTree"+"slide.png")
-#    print(tree.EstimateCelluseNum(ScaledTree))
+ScaledTree = tree.preLayout_Scaling(ScaledTree)
+tree.saveTree(ScaledTree,"image/ScaledTree"+"slide.png")
 
 #ColorList = ['#4ccdd1', '#ec8f8a', '#41ee85', '#957470', '#89a772', '#f3bad0', '#d5b38b', '#e3c283', '#5a58e3', '#e59545']
 
 #WithoutTransform,cmpOverlappNum,cmpFootPrint,cmpFreq = xntm(Tree,[size,size],ColorList=ColorList,ImageName="slide",ImageOut=True,ProcessOut=False) 
 #Transformed,OverlappNum,FootPrint,Freq = xntm(TransformedTree,[size,size],ColorList=ColorList,ImageName="slide"+"_transformed",ImageOut=True,ProcessOut=False)
-flexplace.SamplePreparation(Tree,[size,size],ColorList=ColorList,ImageName="slide"+"_transformed",ImageOut=True,ProcessOutput=False)
+flexplace.SamplePreparation(Tree,[size,size],ColorList=ColorList,ImageName="slide",ImageOut=True,ProcessOutput=False)
+flexplace.SamplePreparation(ScaledTree,[size,size],ColorList=ColorList,ImageName="slide"+"_transformed",ImageOut=True,ProcessOutput=False)
+
 #WithoutTransform,cmpOverlappNum,cmpFootPrint,cmpFreq = xntm(Tree,[size,size],ColorList=ColorList,ImageName="slide",ImageOut=True,ProcessOut=True) 
 #Transformed,OverlappNum,FootPrint,Freq = xntm(TransformedTree,[size,size],ColorList=ColorList,ImageName="slide"+"_transformed",ImageOut=True,ProcessOut=True)
     #WithoutTransform = xntm(Tree,[20,20],ColorList=ColorList,ImageName="slide",ImageOut=True,ProcessOut=True) 

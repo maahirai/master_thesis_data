@@ -69,11 +69,12 @@ def getOutlineOfMixerShape(MixerCells,Grid):
     res = []
     lines = []
     dy,dx = [0,1,0,-1],[-1,0,1,0] 
-    for way in range(4): 
+    for way in range(0,4): 
         line = []
         for cell in MixerCells: 
             y,x = cell 
-            OffsetMixerLineWidth = MixerLineWidth//2
+            OffsetMixerLineWidth = MixerLineWidth//5
+            #　セルの四隅の座標
             LeftSet = [(Grid[y][x].LTopY+OffsetMixerLineWidth,Grid[y][x].LTopX+OffsetMixerLineWidth),(Grid[y][x].LBottomY-OffsetMixerLineWidth,Grid[y][x].LBottomX+OffsetMixerLineWidth)]
             TopSet = [(Grid[y][x].LTopY+OffsetMixerLineWidth,Grid[y][x].LTopX+OffsetMixerLineWidth),(Grid[y][x].RTopY+OffsetMixerLineWidth,Grid[y][x].RTopX-OffsetMixerLineWidth)]
             RightSet = [(Grid[y][x].RTopY+OffsetMixerLineWidth,Grid[y][x].RTopX-OffsetMixerLineWidth),(Grid[y][x].RBottomY-OffsetMixerLineWidth,Grid[y][x].RBottomX-OffsetMixerLineWidth)]
@@ -85,13 +86,52 @@ def getOutlineOfMixerShape(MixerCells,Grid):
                 for coord in addcoords[way]: 
                     if mdfCoordForPIL(coord) not in line:
                         line.append(mdfCoordForPIL(coord))
-        # draw.lineでの描画順を一筆書き順になるよう調整する
-        if way>=2:
-            line = reversed(line)
         lines.append(line)
-    for line in lines: 
-        for coord in line: 
-            res.append(coord)
+        
+    
+    # ミキサーの左，下，右，上の順番で辺が入っている
+    # 各辺上の点をyの小さい順，xの小さい順，yの大きい順，xの大きい順に集めていくことによって，
+    # draw.lineでの描画順を一筆書き順になるよう調整する
+    OrderModifiedLines = []
+    SortByX = [False,True,False,True]
+    Reverse = [False,False,True,True]
+    for way in range(4):
+        if SortByX[way]: 
+            mdfline = sorted(lines[way],reverse=Reverse[way],key=lambda coord:coord[0])
+            for idx in range(0,len(mdfline)-3):
+                first = mdfline[idx]
+                second = mdfline[idx+1]
+                third = mdfline[idx+2]
+                fourth = mdfline[idx+3]
+                x1,y1 = first
+                x2,y2 = second
+                x3,y3 = third
+                x4,y4 = fourth
+                if x2==x3 and y1!=y2 and y2!=y3 and y3!=y4 :
+                    # 2番目と3番目の点を入れ替える 
+                    tmp = mdfline[idx+2]
+                    mdfline[idx+2] = mdfline[idx+1]
+                    mdfline[idx+1] = tmp 
+            for coord in mdfline: 
+                res.append(coord)
+        else: 
+            mdfline = sorted(lines[way],reverse=Reverse[way],key=lambda coord:coord[1])
+            for idx in range(0,len(mdfline)-3):
+                first = mdfline[idx]
+                second = mdfline[idx+1]
+                third = mdfline[idx+2]
+                fourth = mdfline[idx+3]
+                x1,y1 = first
+                x2,y2 = second
+                x3,y3 = third
+                x4,y4 = fourth
+                if y2==y3 and x1!=x2 and x2!=x3 and x3!=x4 :
+                    # 2番目と3番目の点を入れ替える 
+                    tmp = mdfline[idx+2]
+                    mdfline[idx+2] = mdfline[idx+1]
+                    mdfline[idx+1] = tmp 
+            for coord in mdfline: 
+                res.append(coord)
     return res
 
 def mdfCoordForPIL(coord): 
