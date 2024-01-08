@@ -104,17 +104,11 @@ formerTree = deepcopy(Tree)
 ScaledTree = tree.preLayout_Scaling(ScaledTree)
 tree.saveTree(ScaledTree,"image/ScaledTree"+"slide.png")
 
-#ColorList = ['#4ccdd1', '#ec8f8a', '#41ee85', '#957470', '#89a772', '#f3bad0', '#d5b38b', '#e3c283', '#5a58e3', '#e59545']
 
-#WithoutTransform,cmpOverlappNum,cmpFootPrint,cmpFreq = xntm(Tree,[size,size],ColorList=ColorList,ImageName="slide",ImageOut=True,ProcessOut=False) 
-#Transformed,OverlappNum,FootPrint,Freq = xntm(TransformedTree,[size,size],ColorList=ColorList,ImageName="slide"+"_transformed",ImageOut=True,ProcessOut=False)
 flexplace.SamplePreparation(Tree,[size,size],ColorList=ColorList,ImageName="slide",ImageOut=True,ProcessOutput=False)
-flexplace.SamplePreparation(ScaledTree,[size,size],ColorList=ColorList,ImageName="slide"+"_transformed",ImageOut=True,ProcessOutput=False)
+print("スケーリングありの試薬合成スタート")
+flexplace.SamplePreparation(ScaledTree,[size,size],ColorList=ColorList,IsScalingUsable=True,ImageName="slide"+"_transformed",ImageOut=True,ProcessOutput=False)
 
-#WithoutTransform,cmpOverlappNum,cmpFootPrint,cmpFreq = xntm(Tree,[size,size],ColorList=ColorList,ImageName="slide",ImageOut=True,ProcessOut=True) 
-#Transformed,OverlappNum,FootPrint,Freq = xntm(TransformedTree,[size,size],ColorList=ColorList,ImageName="slide"+"_transformed",ImageOut=True,ProcessOut=True)
-    #WithoutTransform = xntm(Tree,[20,20],ColorList=ColorList,ImageName="slide",ImageOut=True,ProcessOut=True) 
-    #Transformed = xntm(TransformedTree,[20,20],ColorList=ColorList,ImageName="slide"+"_transformed",ImageOut=True,ProcessOut=True)
 #result = [height,cmpOverlappNum,OverlappNum,WithoutTransform,Transformed]
 #print(result)
 #print("変形なしFlushing:{},変形ありFlushing:{}".format(WithoutTransform,Transformed))

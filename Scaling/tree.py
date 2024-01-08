@@ -152,7 +152,6 @@ def NumChildMixer(root):
         mixeridx = int(root.name[1:])
         if not lNumChildMixer[mixeridx] == -1:
             return lNumChildMixer[mixeridx]
-            print(root.name,v)
         else :
             v = 0
             psize = root.size
@@ -229,7 +228,6 @@ def Scaling(root,target_mixer_name,scale_factor):
                     q.append(child)
         while(dfsq): 
             target = dfsq.pop(0)
-            #print(target.name,target.size,target.provide_vol)
             for child in target.children: 
                 if child.provide_vol == child.size: 
                     # 削除すべき無意味なミキサノードなので，飛ばしてさらにその子が無意味か探索
@@ -278,7 +276,6 @@ def judgeRatioGroup(node):
                 # 3fluid from 6M を 6Mに提供するときなど，
                 # PMDの状況と親子ミキサーのレイアウトの仕方次第でIF無しでの置き方もある
                 if child.size>=child.provide_vol*2 and node.size>=child.provide_vol*2: 
-                    print(child.name)
                     continue
                 else:
                     IncludeOddRatio = True

@@ -122,7 +122,9 @@ class ModuleStateManage:
         # key:親ミキサーのhash,value:選択した子のレイアウト．
         # 配置を再開する際は，モジュールの状態を見てどのモジュールを配置するか決める
         self.PlacementSkippedLayout = []
-        self.UsedLayout = {}
+        self.UsingLayout = {}
+        # ロールバックのループを防ぐ
+        self.PreviousLayout = {}
     
     def getModule(self,hash):
         return self.ModuleInfo[str(hash)]
@@ -164,6 +166,30 @@ class PMDStateManage:
             y,x = cell
             self.State[y][x] = 0 
         self.CellForFlushing = []
+    
+    def show(self): 
+        cellforprov = {}
+        cellforplace = {}
+        print("CellforFlushingは")
+        printCells(self.CellForFlushing)
+        print("CellforProtectは")
+        printCells(self.CellForProtectFromFlushing)
+        for y in self.pmdVsize:
+            for x in self.pmdHsize: 
+                for hash in  self.RegisteredAsPlacementCell[y][x]: 
+                    key = "({},{})".format(x,y)
+                    if not cellforplace[key]:
+                        cellforplace[key] = []
+                    else : 
+                        cellforplace[key].append(hash)
+                for hash in  self.RegisteredAsProvCell[y][x]: 
+                    key = "({},{})".format(x,y)
+                    if not cellforplace[key]:
+                        cellforprov[key] = []
+                    else : 
+                        cellforprov[key].append(hash)
+        print("現在配置セルに登録している配置中のミキサーは",cellforplace)
+        print("現在提供セルに登録している配置中のミキサーは",cellforprov)
 
 def IsInsidePMD(Y,X): 
     global PMD
@@ -357,12 +383,13 @@ def printCells(cells):
     print("\n")
 
 class Layout: 
-    def __init__(self,PMD,PMixerCells,CorrectMixingOrder): 
+    def __init__(self,PMD,PMixerHash,PMixerCells,CorrectMixingOrder): 
         self.Placements = {}
         self.PMD = copy.deepcopy(PMD)
         self.RestProvCell = copy.deepcopy(PMixerCells)
         self.CorrectMixingOrder = copy.deepcopy(CorrectMixingOrder)
-        self.layer = None
+        self.layer = None 
+        self.PMixerHash = PMixerHash
     
     # オーバーラップの状況から兄弟ミキサーの混合順を求める
     def IsMixableInECNOrder(self):
@@ -419,25 +446,25 @@ class Layout:
         return MinLayer
     
     # 遅すぎる泣
-    def eval(self):
-        global ModuleStates
-        score = 0
-        layer = self.getLayer()
-        NeedFlushNum = self.getMaxLayer(layer)
-        # 現在置かれている，兄弟以外のミキサーとのオーバーラップをチェック 
-        # オーバーラップをしている場合，その対象ミキサーの
-        # 先祖ミキサー&自身の先祖ミキサーの子ミキサーであるミキサーの提供液滴配置セルとオーバーラップがあれば配置不可．
-        for hash in self.CorrectMixingOrder: 
-            if ModuleStates.getModule(hash).IsMixer():
-                placement = self.Placements[str(hash)]
-                tmpPMD = copy.deepcopy(self.PMD)
-                # 仮置き
-                tmpPMD = self.TemporalyPlaceMixer(tmpPMD,placement)
-                GrandchildLayoutAlt = getChildrenLayoutAlt(tmpPMD,placement.CoveringCell,hash)
-                score += len(GrandchildLayoutAlt)/(NeedFlushNum+1) 
-        return score 
+    #def OldEval(self):
+    #    global ModuleStates
+    #    score = 0
+    #    layer = self.getLayer()
+    #    NeedFlushNum = self.getMaxLayer(layer)
+    #    # 現在置かれている，兄弟以外のミキサーとのオーバーラップをチェック 
+    #    # オーバーラップをしている場合，その対象ミキサーの
+    #    # 先祖ミキサー&自身の先祖ミキサーの子ミキサーであるミキサーの提供液滴配置セルとオーバーラップがあれば配置不可．
+    #    for hash in self.CorrectMixingOrder: 
+    #        if ModuleStates.getModule(hash).IsMixer():
+    #            placement = self.Placements[str(hash)]
+    #            tmpPMD = copy.deepcopy(self.PMD)
+    #            # 仮置き
+    #            tmpPMD = self.TemporalyPlaceMixer(tmpPMD,placement)
+    #            GrandchildLayoutAlt = getChildrenLayoutAlt(tmpPMD,placement.CoveringCell,hash)
+    #            score += len(GrandchildLayoutAlt)/(NeedFlushNum+1) 
+    #    return score 
 
-    def NewEval(self):
+    def eval(self):
         global ModuleStates
         layer = self.getLayer()
         NeedFlushNum = self.getMaxLayer(layer)
@@ -484,18 +511,21 @@ def PlaceModule(placement):
     else : 
         PlaceReagent(placement.hash,placement.CoveringCell,placement.ProvCell)
 
+# スケーリングをして，親ミキサーが大きくなると指数関数的にレイアウトの決定にかかる時間が伸びる．
+# スケーリングをした場合のみ，レイアウトの決定をショートカットする．
+IsStrictPlacement = False
 # 親ミキサーの配置場所を仮決めして引数に与えた場合，
 # その子のモジュールはどのようなレイアウトを取ることができるか探索する．
 # 孫ミキサー（子ミキサーの子）のレイアウト個数を数え上げさせる場合があるので，
 # この関数がPMDの状態はglobalのPMDとは異なる場合もある
 def getChildrenLayoutAlt(PMD,PMixerCellsAlt,PMixerHash):
-    global ModuleStates,MixerShapeKind
+    global ModuleStates,MixerShapeKind,IsStrictPlacement
 
     PMixer = ModuleStates.getModule(PMixerHash)
     # ECNのおかげで，ミキサー→試薬の順番で配置場所を探索できる．
     # 試薬は，余ってる提供セルを適当に割り当てる. 
     GeneratingLayouts = [[] for i in range(len(PMixer.ChildrenHash)+1)]
-    LayoutSeed = Layout(PMD,PMixerCellsAlt,PMixer.ChildrenHashSortedByECN())
+    LayoutSeed = Layout(PMD,PMixerHash,PMixerCellsAlt,PMixer.ChildrenHashSortedByECN())
     GeneratingLayouts[0].append(LayoutSeed)
     for Childidx,chash in enumerate(PMixer.ChildrenHashSortedByECN()):
         child = ModuleStates.getModule(chash)
@@ -523,8 +553,10 @@ def getChildrenLayoutAlt(PMD,PMixerCellsAlt,PMixerHash):
                                     # 子ミキサーの配置セル候補と，親ミキサーが共有しているセルを求める.
                                     # これらが提供液滴配置セルの候補となる
                                     InterSectionCells = getInterSectionCells(PMixerCellsAlt,CMixerCellsAlt)
+                                    print(PMixer.name,"の",Childidx+1,"番目のモジュール{}配置法,探索中".format(ModuleStates.getModule(chash).name),InterSectionCells)
                                     # 適当な参照セルで子ミキサーを置いた時，親ミキサと重なるセル数が提供液滴数よりも多い場合処理を続行
-                                    if len(InterSectionCells)>=child.ProvNum:
+                                    # 3from4Mixerのとき，len(InterSectionCells) == child.sizeになる
+                                    if child.ProvNum <= len(InterSectionCells):
                                         ProvCellsAlt = getProvCellsAlt(InterSectionCells,child.ProvNum)
                                         for provcells in ProvCellsAlt:
                                             # 適当に提供液滴の配置パターンを書き出してみただけやから，
@@ -537,49 +569,68 @@ def getChildrenLayoutAlt(PMD,PMixerCellsAlt,PMixerHash):
                                                 # 提供液滴の配置セルが他の兄弟ミキサーにもう取られているかのチェック
                                                 if cell not in LayoutProcess.RestProvCell:
                                                     Pass = False 
-                                            # 本格的なチェックを行い，有効なレイアウトか確認する.チェック項目は以下の通り．
-                                                # デッドロックが発生していないか
+                                            
+                                            # 高速化のためにきつい条件でレイアウトを判定する．
+                                            # そもそもPlacementSkipped以外のミキサーで，兄弟もしくは先祖ではないミキサーとのオーバーラップ
+                                            # 自体を禁止すべきなのでは?
+                                            if Pass and IsStrictPlacement:
+                                                for cell in CMixerCellsAlt: 
+                                                    y,x = cell
+                                                    for mhash in LayoutProcess.PMD.RegisteredAsPlacementCell[y][x]: 
+                                                        if Pass and not (mhash in child.AncestorHash or  mhash in PMixer.ChildrenHash):
+                                                            # 兄弟でも先祖ミキサーでもないなら
+                                                            print(ModuleStates.getModule(mhash).name,"in",child.name)
+                                                            Pass = False
+                                                            break
+
+                                            # 有効なレイアウトとしての最低限の確認.デッドロックが発生していないか
                                                 ## まずは，配置セルに提供液滴を配置する他のミキサーの内，先祖ミキサーでないもの(A)を調査
-                                            suspicion = []
-                                            for cell in CMixerCellsAlt: 
-                                                y,x = cell
-                                                for mhash in LayoutProcess.PMD.RegisteredAsProvCell[y][x]: 
-                                                    if mhash not in child.AncestorHash: 
-                                                        suspicion.append(mhash) 
-                                            ## 逆に，提供液滴を配置するセルに配置される他のミキサーで，先祖ミキサーでないもの(B)を調査
-                                            for cell in provcells: 
-                                                y,x = cell 
-                                                for mhash in LayoutProcess.PMD.RegisteredAsPlacementCell[y][x]: 
-                                                    if (mhash in suspicion) and (ModuleStates.getModule(mhash).state != "PlacementSkipped" ): 
-                                                        # AかつBの関係になる様なミキサーの内，
-                                                        # 相手が配置されている(ECNのより大きい部分木に属する)ミキサーならデッドロックが発生
-                                                        Pass = False
-                                            # 先祖の子だが，自身の先祖には含まれないモジュールの内，
+                                            if Pass and not IsStrictPlacement:
+                                                suspicion = []
+                                                for cell in CMixerCellsAlt: 
+                                                    y,x = cell
+                                                    for mhash in LayoutProcess.PMD.RegisteredAsProvCell[y][x]: 
+                                                        if mhash not in child.AncestorHash: 
+                                                            suspicion.append(mhash) 
+                                                ## 逆に，提供液滴を配置するセルに配置される他のミキサーで，先祖ミキサーでないもの(B)を調査
+                                                for cell in provcells: 
+                                                    y,x = cell 
+                                                    for mhash in LayoutProcess.PMD.RegisteredAsPlacementCell[y][x]: 
+                                                        if (mhash in suspicion) and (ModuleStates.getModule(mhash).state != "PlacementSkipped" ): 
+                                                            # AかつBの関係になる様なミキサーの内，
+                                                            # 相手が配置されている(ECNのより大きい部分木に属する)ミキサーならデッドロックが発生
+                                                            Pass = False 
+                                                            break
+                                            # 先祖の子だが，兄弟にも自身の先祖には含まれないモジュールの内，
                                             # 自身の先祖よりECNの大きいモジュールに対しては，提供液滴の配置予定セルでもオーバーラップしていたらダメ
                                             # 自身の先祖よりECNの小さいモジュールに対しては，もう配置されている提供液滴にオーバーラップしていたらダメ
-                                            for cell in CMixerCellsAlt: 
-                                                y,x = cell 
-                                                for mhash in LayoutProcess.PMD.RegisteredAsProvCell[y][x]: 
-                                                    if mhash not in child.AncestorHash and ModuleStates.getModule(mhash).ParentHash in child.AncestorHash and ModuleStates.getModule(mhash).ParentHash != child.ParentHash:
-                                                        MyAncestorAndHisBrotherHash = getMyAncestor(ModuleStates.getModule(mhash).ParentHash,child.AncestorHash)
-                                                        TheirParent = ModuleStates.getModule(ModuleStates.getModule(mhash).ParentHash)
-                                                        CmpPosition = TheirParent.ChildrenHash.index(mhash)
-                                                        MyAncestorPosition = TheirParent.ChildrenHash.index(MyAncestorAndHisBrotherHash)
-                                                        if CmpPosition < MyAncestorPosition: 
-                                                            Pass = False  
-                                                        else : 
-                                                            if ModuleStates.getModule(mhash).state != "PlacementSkipped" : 
-                                                                Pass = False
+                                            if Pass:
+                                                for cell in CMixerCellsAlt: 
+                                                    y,x = cell 
+                                                    for mhash in LayoutProcess.PMD.RegisteredAsProvCell[y][x]: 
+                                                        if mhash not in child.AncestorHash and ModuleStates.getModule(mhash).ParentHash in child.AncestorHash and ModuleStates.getModule(mhash).ParentHash != child.ParentHash:
+                                                            MyAncestorAndHisBrotherHash = getMyAncestor(ModuleStates.getModule(mhash).ParentHash,child.AncestorHash)
+                                                            TheirParent = ModuleStates.getModule(ModuleStates.getModule(mhash).ParentHash)
+                                                            CmpPosition = TheirParent.ChildrenHash.index(mhash)
+                                                            MyAncestorPosition = TheirParent.ChildrenHash.index(MyAncestorAndHisBrotherHash)
+                                                            if CmpPosition < MyAncestorPosition: 
+                                                                Pass = False  
+                                                                break
+                                                            else : 
+                                                                if ModuleStates.getModule(mhash).state != "PlacementSkipped" : 
+                                                                    Pass = False
+                                                                    break
                                                              
                                             ## 兄弟ミキサーとのオーバーラップが発生している場合，混合順はECN順になるか?
-                                            suspicion = []
-                                            for cell in CMixerCellsAlt: 
-                                                y,x = cell 
-                                                # 配置セル内に，兄弟ミキサー(自分よりECNが大きい)の提供セルがある場合，
-                                                # 自分の方がミキサーを先に混合する必要が出る．それはECNの概念に矛盾するので不合格．
-                                                for mhash in LayoutProcess.PMD.RegisteredAsProvCell[y][x]: 
-                                                    if mhash in PMixer.ChildrenHash:
-                                                        Pass = False 
+                                            if Pass:
+                                                suspicion = []
+                                                for cell in CMixerCellsAlt: 
+                                                    y,x = cell 
+                                                    # 配置セル内に，兄弟ミキサー(自分よりECNが大きい)の提供セルがある場合，
+                                                    # 自分の方がミキサーを先に混合する必要が出る．それはECNの概念に矛盾するので不合格．
+                                                    for mhash in LayoutProcess.PMD.RegisteredAsProvCell[y][x]: 
+                                                        if mhash in PMixer.ChildrenHash:
+                                                            Pass = False 
                                             # ここまできたら合格なので，次の子モジュールの配置方法の探索に渡す
                                             if Pass:
                                                 for cell in provcells: 
@@ -613,7 +664,12 @@ def getChildrenLayoutAlt(PMD,PMixerCellsAlt,PMixerHash):
                 placement = Placement(chash,PMixerHash,CoveringCells,ProvCells,FlushCells)
                 LayoutProcess.Placements[str(chash)] = placement
                 GeneratingLayouts[Childidx+1].append(LayoutProcess)
-
+        #if GeneratingLayouts[Childidx] and not GeneratingLayouts[Childidx+1]: 
+        #    print(PMixer.name,"の子のレイアウトが途絶えた")
+        #    ModuleStates.showModuleNames()
+        #    for layout in GeneratingLayouts[Childidx]:
+        #        layout.show()
+        #    return "ぷげら"
     return GeneratingLayouts[len(PMixer.ChildrenHash)]
 
 
@@ -625,31 +681,54 @@ def PlaceRootMixer():
     MaxAltnum = 0
     BestMixerShape = None
     MixerShapeLib = getMixerShapeLib(ModuleStates.getModule(RootHash).size)
-    for mixerkind in MixerShapeKind:
-        if MixerShapeLib[mixerkind]==None:
+
+    kind = "Rectangle"
+    for idx in range(len(MixerShapeLib[kind])):
+        mixershape = TransformMixerShapelibJsonIntoList(MixerShapeLib["Rectangle"][str(idx)])
+        OutlineV,OutlineH = getMixerOutlineSize(mixershape)
+        if OutlineV>PMD.pmdVsize or OutlineH>PMD.pmdHsize:
+            #　PMDサイズを絞らない限り，通ることはない
+            kind = "LShaped"
             continue
-        else:
-            for idx in range(len(MixerShapeLib[mixerkind])):
-                stridx = str(idx)
-                mixershape = TransformMixerShapelibJsonIntoList(MixerShapeLib[mixerkind][stridx])
-                ### ミキサーをすっぽり収めるような長方形のサイズを求め，極力PMDの中心になるよう配置位置を決める.
-                OutlineV,OutlineH = getMixerOutlineSize(mixershape)
-                if OutlineV>PMD.pmdVsize or OutlineH>PMD.pmdHsize:
-                    continue
-                ref_y,ref_x = (PMD.pmdVsize-OutlineV)//2,(PMD.pmdHsize-OutlineH)//2
-                # ミキサーの基準セル（概形の左上セル）を(ref_y,ref_x)とした場合でミキサーがPMD上に収まる場合，
-                # ミキサーの形状の候補として処理を進める．
-                if IsInsidePMD(ref_y,ref_x) and IsInsidePMD(ref_y+OutlineV-1,ref_x+OutlineH-1):
-                    # mixershapeを(ref_y,ref_x)分平行移動させる．
-                    dVdH = (ref_y,ref_x)
-                    RootMixerCells = Translation(mixershape,dVdH)
-                    LayoutAlternatives = getChildrenLayoutAlt(PMD,RootMixerCells,RootHash)
-                    if len(LayoutAlternatives)>MaxAltnum:
-                        MaxAltnum = len(LayoutAlternatives)
-                        BestMixerShape = RootMixerCells 
-                else: 
-                    continue 
-    if BestMixerShape == None or MaxAltnum==0: 
+        ref_y,ref_x = (PMD.pmdVsize-OutlineV)//2,(PMD.pmdHsize-OutlineH)//2
+        # ミキサーの基準セル（概形の左上セル）を(ref_y,ref_x)とした場合でミキサーがPMD上に収まる場合，
+        # ミキサーの形状の候補として処理を進める．
+        if IsInsidePMD(ref_y,ref_x) and IsInsidePMD(ref_y+OutlineV-1,ref_x+OutlineH-1):
+            # mixershapeを(ref_y,ref_x)分平行移動させる．
+            dVdH = (ref_y,ref_x)
+            RootMixerCells = Translation(mixershape,dVdH)
+            BestMixerShape = RootMixerCells 
+            break
+        else: 
+            continue 
+            #遅すぎるからショートカットした処理を上に書いた．あとでいい方法考えても良い
+    #for mixerkind in MixerShapeKind:
+    #    if MixerShapeLib[mixerkind]==None:
+    #        continue
+    #    else:
+            #for idx in range(len(MixerShapeLib[mixerkind])):
+            #    stridx = str(idx)
+            #    mixershape = TransformMixerShapelibJsonIntoList(MixerShapeLib[mixerkind][stridx])
+            #    ### ミキサーをすっぽり収めるような長方形のサイズを求め，極力PMDの中心になるよう配置位置を決める.
+            #    OutlineV,OutlineH = getMixerOutlineSize(mixershape)
+            #    if OutlineV>PMD.pmdVsize or OutlineH>PMD.pmdHsize:
+            #        continue
+            #    ref_y,ref_x = (PMD.pmdVsize-OutlineV)//2,(PMD.pmdHsize-OutlineH)//2
+            #    # ミキサーの基準セル（概形の左上セル）を(ref_y,ref_x)とした場合でミキサーがPMD上に収まる場合，
+            #    # ミキサーの形状の候補として処理を進める．
+            #    if IsInsidePMD(ref_y,ref_x) and IsInsidePMD(ref_y+OutlineV-1,ref_x+OutlineH-1):
+            #        # mixershapeを(ref_y,ref_x)分平行移動させる．
+            #        dVdH = (ref_y,ref_x)
+            #        RootMixerCells = Translation(mixershape,dVdH)
+            #        LayoutAlternatives = getChildrenLayoutAlt(PMD,RootMixerCells,RootHash)
+            #        if len(LayoutAlternatives)>MaxAltnum:
+            #            MaxAltnum = len(LayoutAlternatives)
+            #            BestMixerShape = RootMixerCells 
+            #    else: 
+            #        continue 
+    #if BestMixerShape == None or MaxAltnum==0: 
+    #    print("M0，もしくはその子のレイアウト方法が見つかりませんでした．",file=sys.stderr)
+    if BestMixerShape == None:
         print("M0，もしくはその子のレイアウト方法が見つかりませんでした．",file=sys.stderr)
     else : 
         # ルートミキサーの提供液滴を無しとした理由は，Goodnotesを参照
@@ -700,9 +779,7 @@ def PlaceChildren(ParentMixerHash):
     for LayoutAlt in ChildrenLayoutAlt: 
         # レイアウトの評価式，あとで書く
         if LayoutAlt.IsMixableInECNOrder():
-            # 遅すぎて使い物にならない泣
-            #EvalV = LayoutAlt.eval()
-            EvalV = LayoutAlt.NewEval()
+            EvalV = LayoutAlt.eval()
             # print("よくやった！！",EvalV)
             Layout.append((EvalV,LayoutAlt))
 
@@ -711,21 +788,35 @@ def PlaceChildren(ParentMixerHash):
     # →　めちゃ混合の並列性が低くなるのでやめた方が良い
     IsPlacementSkipped = False
     # あとで2番目以降で評価値が高いレイアウトの選択も可能にして良いかも
-    evalv,layout = sorted(Layout,reverse=True,key=lambda x:x[0]).pop(0)
-    ModuleStates.UsedLayout[str(ParentMixerHash)] = layout
-    for hash in layout.CorrectMixingOrder:
-        placement = layout.Placements[str(hash)]
-        # 現在のPMDに，該当モジュールを配置することができるか(配置セルが空いているか)チェック
-        if layout.layer[str(hash)]==0 and PMD.IsPlacableNow(placement):
-            PlaceModule(placement)
-        else : 
-            IsPlacementSkipped = True 
-            # 配置できないから，配置を延期
-            StateTransitions.append(ModuleStates.ModuleInfo[str(hash)].PlacementSkipped)
-    if IsPlacementSkipped:
-        ModuleStates.PlacementSkippedLayout.append(layout) 
-    # 子を置いたら，親ミキサーは子からの提供液滴を待つ状態に遷移する. 
-    StateTransitions.append(ModuleStates.ModuleInfo[str(ParentMixerHash)].WaitingProvidedFluids)
+    if Layout:
+        evalv,layout = sorted(Layout,reverse=True,key=lambda x:x[0]).pop(0)
+        ModuleStates.UsingLayout[str(ParentMixerHash)] = layout 
+        if str(ParentMixerHash) not in ModuleStates.PreviousLayout: 
+            ModuleStates.PreviousLayout[str(ParentMixerHash)] = []
+        ModuleStates.PreviousLayout[str(ParentMixerHash)].append(layout)
+
+        for hash in layout.CorrectMixingOrder:
+            placement = layout.Placements[str(hash)]
+            # 現在のPMDに，該当モジュールを配置することができるか(配置セルが空いているか)チェック
+            if layout.layer[str(hash)]==0 and PMD.IsPlacableNow(placement):
+                PlaceModule(placement)
+            else : 
+                IsPlacementSkipped = True 
+                # 配置できないから，配置を延期
+                StateTransitions.append(ModuleStates.ModuleInfo[str(hash)].PlacementSkipped)
+        if IsPlacementSkipped:
+            ModuleStates.PlacementSkippedLayout.append(layout) 
+        # 子を置いたら，親ミキサーは子からの提供液滴を待つ状態に遷移する. 
+        StateTransitions.append(ModuleStates.ModuleInfo[str(ParentMixerHash)].WaitingProvidedFluids)
+        return 0
+    else: 
+        for hash in PMixer.ChildrenHash: 
+            print(ModuleStates.getModule(hash).name,"の祖先は")
+            for ahash in ModuleStates.getModule(hash).AncestorHash:
+                print(ModuleStates.getModule(ahash).name,end="")
+            print("")
+        print(PMixer.name,"レイアウトがない")
+        return -1
 
 def Mix(MixerHash):
     global ModuleStates,PMD,StateTransitions
@@ -754,11 +845,11 @@ def Mix(MixerHash):
     StateTransitions.append(ModuleStates.ModuleInfo[str(MixerHash)].ProvidingFluids)
 
 def globalInit(PMDsize,root,IsScalingUsable):
-    global PMD,ModuleStates,ScalingUsable,StateTransitions#,CntRollBack,RollBackHash,PrevRollBackPMHash 
+    global PMD,ModuleStates,IsStrictPlacement,StateTransitions#,CntRollBack,RollBackHash,PrevRollBackPMHash 
     PMD = PMDStateManage(PMDsize)
     ModuleStates = ModuleStateManage()
     ModuleInfoInit(root)
-    ScalingUsable = IsScalingUsable 
+    IsStrictPlacement = IsScalingUsable 
     StateTransitions = []
     #CntRollBack = 0
     #RollBackHash={}
@@ -874,10 +965,9 @@ def ExcuteStateTransitions():
         transition()
     StateTransitions = []
 
-# Mixerとその子以下の状態はNoTreatmentにする．
+# MixerHashのミキサーの配置場所はそのままに，その子以下の状態をNoTreatmentに戻す．
 def RollBack(MixerHash):
     global PMD,ModuleStates,StateTransitions
-    PMixer = ModuleStates.getModule(PMixerHash)
     q = []
     RollBackHash = []
     q.append(MixerHash)
@@ -885,7 +975,7 @@ def RollBack(MixerHash):
         ModuleHash = q.pop(0)
         RollBackHash.append(ModuleHash)
         if ModuleStates.getModule(ModuleHash).state != "NoTreatment": 
-            StateTransitions.append(ModuleStates.ModuleInfo[str(MixerHash)]._RollBack)
+            StateTransitions.append(ModuleStates.ModuleInfo[str(ModuleHash)]._RollBack)
 
         Module = ModuleStates.getModule(ModuleHash)
         for CHash in Module.ChildrenHash: 
@@ -895,7 +985,12 @@ def RollBack(MixerHash):
     for y in range(PMD.pmdVsize): 
         for x in range(PMD.pmdHsize): 
             cell = (y,x)
-            if abs(PMDState[y][x]) in RollBackHash: 
+            for hash in RollBackHash: 
+                if hash in PMD.RegisteredAsPlacementCell[y][x]:
+                    PMD.RegisteredAsPlacementCell[y][x].remove(hash)
+                if hash in PMD.RegisteredAsProvCell[y][x]:
+                    PMD.RegisteredAsProvCell[y][x].remove(hash)
+            if abs(PMD.State[y][x]) in RollBackHash: 
                 RollBackCell.append(cell)
                 if cell in PMD.CellForFlushing:
                     PMD.CellForFlushing.remove(cell)
@@ -904,16 +999,14 @@ def RollBack(MixerHash):
     for y,x in RollBackCell: 
         PMD.State[y][x] = 0
 
-
 from .utility import PMDnowSlideImage
 from .utility import ResultSlideImage
-PMD,ModuleStates,RootHash = None,None,None
-IsScalingUsable = False 
+PMD,ModuleStates,RootHash = None,None,None 
 #  状態遷移は逐次でなく，節目節目でまとめて行う． 
 #  逐次でやってると，イテレート元のリストの長さが動的に変更されてプログラミングが難しくなる
 StateTransitions = []
 def SamplePreparation(root,PMDsize,ColorList=None,IsScalingUsable=False,ProcessOutput=False,ImageName="",ImageOut=False):
-    global PMD,ModuleStates,ScalingUsable,RootHash,StateTransitions
+    global PMD,ModuleStates,ScalingUsable,RootHash,StateTransitions,IsStrictPlacement
     globalInit(PMDsize,root,IsScalingUsable)
     PlaceRootMixer()
     ImageCount = 0
@@ -981,6 +1074,7 @@ def SamplePreparation(root,PMDsize,ColorList=None,IsScalingUsable=False,ProcessO
                     if layout.layer[str(hash)] == PlacingLayer and ModuleStates.getModule(hash).state == "PlacementSkipped": 
                         if PMD.IsPlacableNow(layout.Placements[str(hash)]):
                             PlaceModule(layout.Placements[str(hash)])
+
                 # PlacementSkippedLayoutから削除すべきか確認
                 IsAllModulePlaced = True
                 for hash in layout.CorrectMixingOrder:
@@ -997,12 +1091,22 @@ def SamplePreparation(root,PMDsize,ColorList=None,IsScalingUsable=False,ProcessO
                 PMDnowSlideImage(imageName,ColorList,PMD,ModuleStates)
             print("手詰まりかも", ModuleStates.ModulesStatesAt)
             ModuleStates.showModuleNames()
-            return -1,-1,-1
-            # 現在のミキサーの配置方法では手詰まりなので，該当ミキサーの親ミキサーの配置法を考え直す
-            RollBackHash = ModuleStates.PlacementSkippedLayout.pop()
+            # 現在のミキサーの配置方法では手詰まりなので，該当ミキサーの親ミキサーの配置し直す．
+            RollBackLayout = ModuleStates.PlacementSkippedLayout.pop()
+            print(ModuleStates.ModulesStatesAt)
+            RollBackLayout.show()
+            RollBackHash = RollBackLayout.PMixerHash
+            RollBackModule = ModuleStates.getModule(RollBackHash)
+            print(RollBackModule.name,"の子の配置をロールバックし，もう一度配置方法を探索します")
+            # RollBackでは，RollBackHashのMixerとそれ以下のミキサーの全ての状態を一旦NoTreatmentにして，
+            # RollBackHashのミキサーの状態をMixerOnPMDにする．
             RollBack(RollBackHash)
-            # RollBackでは，RollBackHashのMixerとそれ以下のミキサーの状態をNoTreatmentにして，ParentMixerの配置法を再探索後，状態をMixerOnPMDにする．
-            
+            PlaceMixer(RollBackHash,ModuleStates.getModule(RollBackHash).CoveringCell,ModuleStates.getModule(RollBackHash).ProvCell)
+            PlaceChildren(RollBackHash)
+            if ModuleStates.UsingLayout[str(RollBackHash)] in ModuleStates.PreviousLayout[str(RollBackHash)]:
+                if ProcessOutput: 
+                    print("ロールバックもかなわず，",RollBackModule.name,"の子のレイアウトを更新できませんでした")
+                return -1,-1,-1
         else :
             ExcuteStateTransitions()
             if ImageOut and ImageName and ColorList:
