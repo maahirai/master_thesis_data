@@ -263,9 +263,7 @@ def swap(x,y):
 # 二つのミキサーが共有しているセルから，ProvNum個分の提供液滴を渡すセルの候補を探索する．
 def getProvCellsAlt(InterSectionCells,ProvNum):
     CornerCells = getCornerCells(InterSectionCells) 
-    if ProvNum == 0 or len(InterSectionCells)==0:
-        print("やってられませんわ")
-    elif len(InterSectionCells) == ProvNum: 
+    if len(InterSectionCells) == ProvNum: 
         return [InterSectionCells]
     else: 
         # 左右，上下どの角かを判別する．
@@ -553,7 +551,6 @@ def getChildrenLayoutAlt(PMD,PMixerCellsAlt,PMixerHash):
                                     # 子ミキサーの配置セル候補と，親ミキサーが共有しているセルを求める.
                                     # これらが提供液滴配置セルの候補となる
                                     InterSectionCells = getInterSectionCells(PMixerCellsAlt,CMixerCellsAlt)
-                                    print(PMixer.name,"の",Childidx+1,"番目のモジュール{}配置法,探索中".format(ModuleStates.getModule(chash).name),InterSectionCells)
                                     # 適当な参照セルで子ミキサーを置いた時，親ミキサと重なるセル数が提供液滴数よりも多い場合処理を続行
                                     # 3from4Mixerのとき，len(InterSectionCells) == child.sizeになる
                                     if child.ProvNum <= len(InterSectionCells):
@@ -579,7 +576,6 @@ def getChildrenLayoutAlt(PMD,PMixerCellsAlt,PMixerHash):
                                                     for mhash in LayoutProcess.PMD.RegisteredAsPlacementCell[y][x]: 
                                                         if Pass and not (mhash in child.AncestorHash or  mhash in PMixer.ChildrenHash):
                                                             # 兄弟でも先祖ミキサーでもないなら
-                                                            print(ModuleStates.getModule(mhash).name,"in",child.name)
                                                             Pass = False
                                                             break
 
@@ -730,6 +726,7 @@ def PlaceRootMixer():
     #    print("M0，もしくはその子のレイアウト方法が見つかりませんでした．",file=sys.stderr)
     if BestMixerShape == None:
         print("M0，もしくはその子のレイアウト方法が見つかりませんでした．",file=sys.stderr)
+        return
     else : 
         # ルートミキサーの提供液滴を無しとした理由は，Goodnotesを参照
         PlaceMixer(RootHash,BestMixerShape,[])
@@ -810,18 +807,12 @@ def PlaceChildren(ParentMixerHash):
         StateTransitions.append(ModuleStates.ModuleInfo[str(ParentMixerHash)].WaitingProvidedFluids)
         return 0
     else: 
-        for hash in PMixer.ChildrenHash: 
-            print(ModuleStates.getModule(hash).name,"の祖先は")
-            for ahash in ModuleStates.getModule(hash).AncestorHash:
-                print(ModuleStates.getModule(ahash).name,end="")
-            print("")
-        print(PMixer.name,"レイアウトがない")
+        # レイアウトがみつからない
         return -1
 
 def Mix(MixerHash):
     global ModuleStates,PMD,StateTransitions
     mixer = ModuleStates.getModule(MixerHash)
-    print(mixer.name,"を混合します")
     # 親ミキサーに提供液滴を渡していた子ミキサー達は役割を終える．
     for chash in mixer.ChildrenHash: 
         ModuleStates.ModuleInfo[str(chash)].Done()
@@ -1026,6 +1017,7 @@ def SamplePreparation(root,PMDsize,ColorList=None,IsScalingUsable=False,ProcessO
             if shouldPlaceChildren: 
                 CannotDoAnything = False 
                 PlaceChildren(MixerHash)
+
             else: 
                 continue 
 
@@ -1043,12 +1035,9 @@ def SamplePreparation(root,PMDsize,ColorList=None,IsScalingUsable=False,ProcessO
         #　これ以上ミキサーを配置できない状況になったら
         #　ここまでに配置してきたミキサーで混合を行う．
         if CannotDoAnything: 
-            #print("にゃん",ModuleStates.ModulesStatesAt)
             for MixerHash in ModuleStates.ModulesStatesAt["MixerOnPMD"]: 
-                #print("長さ",len(ModuleStates.ModulesStatesAt["MixerOnPMD"]))
                 mixer = ModuleStates.getModule(MixerHash)
                 isReadyForMixing = True 
-                #print(mixer.hash,mixer.ChildrenHash,"これが親子")
                 for ChildHash in mixer.ChildrenHash:
                     if ModuleStates.getModule(ChildHash).state != "ProvidingFluids": 
                        isReadyForMixing = False 
@@ -1057,6 +1046,8 @@ def SamplePreparation(root,PMDsize,ColorList=None,IsScalingUsable=False,ProcessO
                         PMD.TimeStep += 1
                         ChangedTimeStep = True
                     CannotDoAnything = False 
+                    if ProcessOutput: 
+                        print(mixer.name,"を混合します")
                     Mix(MixerHash)
                 else : 
                     continue 
@@ -1089,15 +1080,16 @@ def SamplePreparation(root,PMDsize,ColorList=None,IsScalingUsable=False,ProcessO
                 ImageCount += 1
                 imageName = ImageName+"_"+str(ImageCount)
                 PMDnowSlideImage(imageName,ColorList,PMD,ModuleStates)
-            print("手詰まりかも", ModuleStates.ModulesStatesAt)
-            ModuleStates.showModuleNames()
             # 現在のミキサーの配置方法では手詰まりなので，該当ミキサーの親ミキサーの配置し直す．
             RollBackLayout = ModuleStates.PlacementSkippedLayout.pop()
-            print(ModuleStates.ModulesStatesAt)
-            RollBackLayout.show()
             RollBackHash = RollBackLayout.PMixerHash
             RollBackModule = ModuleStates.getModule(RollBackHash)
-            print(RollBackModule.name,"の子の配置をロールバックし，もう一度配置方法を探索します")
+            if ProcessOutput:
+                print("手詰まりかも", ModuleStates.ModulesStatesAt)
+                ModuleStates.showModuleNames()
+                print(ModuleStates.ModulesStatesAt)
+                RollBackLayout.show()
+                print(RollBackModule.name,"の子の配置をロールバックし，もう一度配置方法を探索します")
             # RollBackでは，RollBackHashのMixerとそれ以下のミキサーの全ての状態を一旦NoTreatmentにして，
             # RollBackHashのミキサーの状態をMixerOnPMDにする．
             RollBack(RollBackHash)
@@ -1120,6 +1112,6 @@ def SamplePreparation(root,PMDsize,ColorList=None,IsScalingUsable=False,ProcessO
     ### フラッシングの発生回数の数え上げ
     FlushNum = CountFlushing(ImageName,ColorList,ImageOut=ImageOut)
     ### ミキサーによって使用されたセル数の数え上げ
-    CellUsedByMixerNum,FreqCellUsed = CountCellUsedByMixerNum()
-    return [FlushNum,CellUsedByMixerNum,FreqCellUsed]
+    CellUseNum,FreqCellUsed = CountCellUsedByMixerNum()
+    return [FlushNum,CellUseNum,FreqCellUsed]
 

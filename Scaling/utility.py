@@ -73,7 +73,8 @@ def getOutlineOfMixerShape(MixerCells,Grid):
         line = []
         for cell in MixerCells: 
             y,x = cell 
-            OffsetMixerLineWidth = MixerLineWidth//5
+            #OffsetMixerLineWidth = MixerLineWidth//5
+            OffsetMixerLineWidth = 0
             #　セルの四隅の座標
             LeftSet = [(Grid[y][x].LTopY+OffsetMixerLineWidth,Grid[y][x].LTopX+OffsetMixerLineWidth),(Grid[y][x].LBottomY-OffsetMixerLineWidth,Grid[y][x].LBottomX+OffsetMixerLineWidth)]
             TopSet = [(Grid[y][x].LTopY+OffsetMixerLineWidth,Grid[y][x].LTopX+OffsetMixerLineWidth),(Grid[y][x].RTopY+OffsetMixerLineWidth,Grid[y][x].RTopX-OffsetMixerLineWidth)]
