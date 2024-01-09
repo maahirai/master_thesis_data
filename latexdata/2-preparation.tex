@@ -2,12 +2,29 @@
 本章では，本論文で扱うProgrammable Microfluidic Device（PMD）と呼ばれるバイオチップの基礎知識について説明をする．
 
 %図は図~\ref{fig:label} のように入れます．
-%\begin{figure}[tbp]
-% \centering\includegraphics[scale=0.3]{img/org/exgate.pdf}
-% \caption{caption}\label{fig:label}
-%\end{figure}
 \section{PMDのアーキテクチャ}
-セル，バルブ，ミキサーでの液滴の混合など，PMDの基礎動作について説明する．
+%セル，バルブ，ミキサーでの液滴の混合など，PMDの基礎動作について説明する．
+PMDの顕微鏡写真を図~\ref{fig:PMDMicrograph}に示す．
+図~\ref{fig:PMDMicrograph}において，赤黒く見えている部品はバルブと呼ばれる．
+また，バルブに囲まれた，青い線の交点となっている領域はセルと呼ばれる．
+図~\ref{fig:PMDMicrograph}から分かるように，PMDはバルブに囲まれたセルが格子状に並んだ構造を持つ．
+
+図~\ref{fig:MixingOnPMD}にPMDを用いて2種類の試薬の液滴の混合を行う過程を描いた図を示す~\cite{4}．
+図~\ref{fig:MixingOnPMD}（a）は1種類目の試薬を入力ポートからPMDへと注入したことを示す図である．
+図~\ref{fig:MixingOnPMD}（b）は，2種類目の試薬を入力ポートからPMDへと注入したことを示す図である．
+図~\ref{fig:MixingOnPMD}（c）は，2種類の試薬の混合を行う際のPMDを示した図である．
+図~\ref{fig:MixingOnPMD}（d）は，2種類の試薬の混合が行われた後のPMDを示した図である．
+バルブの開閉を行うことにより，PMDは外部から注入された試薬の液滴の混合を行う．
+
+\begin{figure}[tbp]
+ \centering\includegraphics[scale=1.0]{img/PMDMicrograph.pdf}
+ \caption{PMDの顕微鏡写真}\label{fig:PMDMicrograph}
+\end{figure}
+
+\begin{figure}[tbp]
+    \centering\includegraphics[scale=1.0]{img/PMDMixing_jp.PDF}
+    \caption{PMD 上に流し込まれた 2 種類の試薬が混合される様子，参考文献~\cite{4} より引用し一部改変}\label{fig:MixingOnPMD}
+\end{figure}
 \section{試薬合成}
 \begin{itemize}
 \item 卒論の元となった手法NTMの混合手順の図を例として，PMDを用いた試薬合成について説明する．
