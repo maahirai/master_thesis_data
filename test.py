@@ -16,8 +16,13 @@ def create_directory(dir_name):
         os.makedirs(dir_name) 
 
 gomi,MaxDepth,datanum,filename = "","","",""
-if len(sys.argv ) == 4:
-    gomi,MaxDepth,datanum,filename = sys.argv 
+print("Length Of Input =",len(sys.argv ))
+for i in range(len(sys.argv)): 
+    print(str(i)+":"+sys.argv[i])
+if len(sys.argv) == 7:
+    MaxDepth,datanum,filename = sys.argv[1],sys.argv[2],sys.argv[3]
+elif len(sys.argv ) == 4:
+    gomi,MaxDepth,datanum,filename = sys.argv
 else : 
     gomi,MaxDepth = sys.argv 
 
@@ -32,6 +37,7 @@ import pathlib
 result_dir = './result/'
 create_directory(result_dir)
 path = Path(result_dir,filename+'.csv')
+print("結果を記入するのは",path)
 with open(path,'w',newline="") as f:
     writer = csv.writer(f)
     writer.writerow(["InitialHeightOfTree","FreqCelluseWithoutPPValue","FreqCelluseWithPPValue","FreqCelluseWithoutScaling","FreqCelluseWithScaling","CelluseNumWithoutPPValue","CelluseNumWithPPValue","CelluseNumWithoutScaling","CelluseNumWithScaling","FlushingWithoutPPValue","FlushingWithPPValue","FlushingWithoutScaling","FlushingWithScaling"])
@@ -67,13 +73,12 @@ with open(path,'w',newline="") as f:
         Scaling.tree.viewTree(Tree)
         #viewTree(Tree)
         TransformedByScaling = Scaling.tree.preLayout_Scaling(Tree)
-        filename = dir+"ScaledTree"+str(i+1)+".png"
-        Scaling.tree.saveTree(TransformedByScaling,filename)
-        #viewTree(TransformedTree)
+        filename = dir+"ScaledTree"+str(i+1)
+        #Scaling.tree.saveTree(TransformedByScaling,filename)
         Scaling.tree.viewTree(TransformedByScaling)
         #ColorList = tree.ColorList
-        FlushingWithoutScaling,CelluseNumWithoutScaling,FreqCelluseNumWithoutScaling = Scaling.flexplace.SamplePreparation(Tree,[pmdsize,pmdsize],ColorList=Scaling.tree.ColorList,IsScalingUsable=False,ImageName=str(i+1)+"_WithoutScaling",ImageOut=True) 
-        FlushingWithScaling,CelluseNumWithScaling,FreqCelluseNumWithScaling = Scaling.flexplace.SamplePreparation(TransformedByScaling,[pmdsize,pmdsize],ColorList=Scaling.tree.ColorList,IsScalingUsable=True,ImageName=str(i+1)+"_Scaling",ImageOut=True)
+        FlushingWithoutScaling,CelluseNumWithoutScaling,FreqCelluseNumWithoutScaling = Scaling.flexplace.SamplePreparation(Tree,[pmdsize,pmdsize],ColorList=Scaling.tree.ColorList,IsScalingUsable=False,ImageName=str(i+1)+"_WithoutScaling",ImageOut=False) 
+        FlushingWithScaling,CelluseNumWithScaling,FreqCelluseNumWithScaling = Scaling.flexplace.SamplePreparation(TransformedByScaling,[pmdsize,pmdsize],ColorList=Scaling.tree.ColorList,IsScalingUsable=True,ImageName=filename+str(i+1)+"_Scaling",ImageOut=False)
 
         result = [height,FreqCelluseNumWithoutPPValue,FreqCelluseNumWithPPValue,FreqCelluseNumWithoutScaling,FreqCelluseNumWithScaling,CelluseNumWithoutPPValue,CelluseNumWithPPValue,CelluseNumWithoutScaling,CelluseNumWithScaling,FlushingWithoutPPValue,FlushingWithPPValue,FlushingWithoutScaling,FlushingWithScaling]
         writer.writerow(result)
