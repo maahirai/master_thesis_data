@@ -7,17 +7,19 @@
 PMDの顕微鏡写真を図~\ref{fig:PMDMicrograph}に示す．
 図~\ref{fig:PMDMicrograph}において，赤黒く見えている部品はバルブと呼ばれる．
 また，バルブに囲まれた，青い線の交点となっている領域はセルと呼ばれる．
-図~\ref{fig:PMDMicrograph}から分かるように，PMDはバルブに囲まれたセルが格子状に並んだ構造を持つ．
+図~\ref{fig:PMDMicrograph}から分かるように，バルブに囲まれたセルが格子状に並んだ構造をPMDは持つ．
 
 図~\ref{fig:MixingOnPMD}にPMDを用いて2種類の試薬の液滴の混合を行う過程を描いた図を示す~\cite{4}．
-図~\ref{fig:MixingOnPMD}（a）は1種類目の試薬を入力ポートからPMDへと注入したことを示す図である．
-図~\ref{fig:MixingOnPMD}（b）は，2種類目の試薬を入力ポートからPMDへと注入したことを示す図である．
-図~\ref{fig:MixingOnPMD}（c）は，2種類の試薬の混合を行う際のPMDを示した図である．
-図~\ref{fig:MixingOnPMD}（d）は，2種類の試薬の混合が行われた後のPMDを示した図である．
-バルブの開閉を行うことにより，PMDは外部から注入された試薬の液滴の混合を行う．
+図~\ref{fig:MixingOnPMD}（a）から（b）は，圧力をかけられることで2種類の試薬が入力ポートからPMDへと注入される様子を示す．
+図~\ref{fig:MixingOnPMD}（c）には，環状にセルが繋げられたミキサーと呼ばれる流路を示す．
+ミキサーは，バルブの開閉の制御を行うことで液滴の混合を行う．
+液滴の混合が行われると，図~\ref{fig:MixingOnPMD}（d）で示したようにミキサー上の液滴の濃度は均一になる．
+
+図~\ref{fig:MixingOnPMD}（c）のミキサーは，液滴の混合にPMDの2x2セルを用いる．このような2x2セルを用いるミキサーのことを2x2ミキサーと呼ぶ．
+PMDはバルブの開閉の制御を行うことで，2x2ミキサーよりも大きいミキサーや長方形以外の形のミキサーを用いた液滴の混合を行う．
 
 \begin{figure}[tbp]
- \centering\includegraphics[scale=1.0]{img/PMDMicrograph.pdf}
+ \centering\includegraphics[scale=1.2]{img/PMDMicrograph.pdf}
  \caption{PMDの顕微鏡写真}\label{fig:PMDMicrograph}
 \end{figure}
 
@@ -25,14 +27,37 @@ PMDの顕微鏡写真を図~\ref{fig:PMDMicrograph}に示す．
     \centering\includegraphics[scale=1.0]{img/PMDMixing_jp.PDF}
     \caption{PMD 上に流し込まれた 2 種類の試薬が混合される様子，参考文献~\cite{4} より引用し一部改変}\label{fig:MixingOnPMD}
 \end{figure}
+
 \section{試薬合成}
-\begin{itemize}
-\item 卒論の元となった手法NTMの混合手順の図を例として，PMDを用いた試薬合成について説明する．
-\item 混合木に関して，提供比率などの基礎概念について説明する．
-\begin{itemize}
-\item 試薬合成中に行われる液滴の混合を木構造で表したのが，混合木である．．．
-\end{itemize} 
-\end{itemize} 
+PMDは，ミキサーを用いた液滴の混合を複数回行うことで，狙った比率で試薬を混合した液滴を生成する．
+この処理のことを，試薬合成と呼ぶ．図~\ref{fig:NTM}に，既存手法No Transport Mixing（NTM）を用いた試薬合成の入力データと出力データを示す~\cite{4}．
+図~\ref{fig:NTM}（a）は，試薬合成の入力データとして用いられる木構造のデータ，混合木を示す．
+図~\ref{fig:NTM}の混合木は，R1からR4の4種類の試薬を24:18:12:10で混合する試薬合成を表現している．
+混合木の葉の位置にあるノードは混合に用いる試薬を表現している，試薬ノードである．
+また，試薬ノード以外のノードはミキサーを用いた液滴の混合を表現している，混合ノードである．
+混合ノードM$_i$は，i番目のミキサーでの液滴の混合を表現している．
+
+ノード間に張られたエッジの掛数は，子ノードから親ノードへと提供される液滴の個数を表現している．
+例えば，M$_3$，M$_2$，R$_1$のノードから，親ノードであるM$_1$へと張られたエッジの掛数の2，1，1は，それぞれのノードからM$_1$へと提供される液滴の個数を表している．
+また，この2:1:1のような子ノードから親ノードへと提供される液滴の個数の比のことを提供比率と呼ぶ．
+
+図~\ref{fig:NTM}（b）から（e）は，図~\ref{fig:NTM}（a）の混合木で表現された試薬合成をPMDで実行する際の液滴の混合手順を示す．
+図~\ref{fig:NTM}（b）ではM$_2$とM$_5$，図~\ref{fig:NTM}（c）ではM$_4$，図~\ref{fig:NTM}（d）ではM$_3$，図~\ref{fig:NTM}（e）ではM$_1$において液滴が混合されている．
+既存手法NTMは，図~\ref{fig:NTM}（a）の混合木を入力として受け取り，混合木に基づいて試薬とミキサーの配置場所を探索することで，図~\ref{fig:NTM}（b）から（e）のような液滴の混合手順を生成する．
+
+\begin{figure}[tbp]
+    \centering\includegraphics[scale=0.8]{img/NTMResult_jp.PDF}
+    \caption{既存手法No Transport Mixing（NTM）を用いた試薬合成の入力データと出力データ，参考文献~\cite{4} より引用し一部改変}\label{fig:NTM}
+\end{figure}
+
+
+%\begin{itemize}
+%\item 卒論の元となった手法NTMの混合手順の図を例として，PMDを用いた試薬合成について説明する．
+%\item 混合木に関して，提供比率などの基礎概念について説明する．
+%\begin{itemize}
+%\item 試薬合成中に行われる液滴の混合を木構造で表したのが，混合木である．．．
+%\end{itemize} 
+%\end{itemize} 
 \section{フラッシング}
 フラッシングという操作自体と，フラッシング回数を減らしたいという研究の動機について説明する．
  
