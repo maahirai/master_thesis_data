@@ -1,0 +1,4 @@
+Height,#FreqWithoutPPV,#FreqWithPPV,#FreqWithoutScaling,#FreqWithScaling,#CelluseWithoutPPV,#CelluseWithPPV,#CelluseWithoutScaling,#CelluseWithScaling,#FlushingWithoutPPV,#FlushingWithPPV,#FlushingWithoutScaling,#FlushingWithScaling
+2,1.41,1.41,1.399,1.374,11.423,11.423,11.493,13.16,0.34,0.34,0.303,0.0,0.0,100.0
+3,1.903,1.902,1.748,1.619,18.386,18.406,19.995,25.817,1.675,1.69,1.234,0.213,-0.935,82.143
+4,2.637,2.641,2.06,1.752,24.587,24.587,31.459,46.404,5.422,5.202,2.578,0.596,1.426,74.796
