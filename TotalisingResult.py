@@ -6,7 +6,7 @@ from pathlib import Path
 
 # test.pyの上位モジュール
 tree_height = ["2","3","4"]
-result_key = ["FreqCelluseWithoutPPValue","FreqCelluseWithPPValue","FreqCelluseWithoutScaling","FreqCelluseWithScaling","CelluseNumWithoutPPValue","CelluseNumWithPPValue","CelluseNumWithoutScaling","CelluseNumWithScaling","FlushingWithoutPPValue","FlushingWithPPValue","FlushingWithoutScaling","FlushingWithScaling"]
+result_key = ["MixerCnt","FreqCelluseWithoutPPValue","FreqCelluseWithPPValue","FreqCelluseWithoutScaling","FreqCelluseWithScaling","CelluseNumWithoutPPValue","CelluseNumWithPPValue","CelluseNumWithoutScaling","CelluseNumWithScaling","FlushingWithoutPPValue","FlushingWithPPValue","FlushingWithoutScaling","FlushingWithScaling"]
 add_key = ["ReductionRateByPPValue","ReductionRateByScaling"]
 totalising_dict = {}
 datanum_cnt = {}
@@ -56,13 +56,27 @@ for filename in files:
                             overallnum,dict = datanum_cnt[height] 
                             dict["ReductionRateByScaling"] += 1
                             datanum_cnt[height] = (overallnum,dict)
-        else : 
-            print(full_path) 
+        #else : 
+        #    print(full_path) 
 
+print(datanum_cnt)
 for height in tree_height: 
     cnt,dict = datanum_cnt[height]
     for key in result_key: 
-        totalising_dict[height][key] /= cnt 
+        totalising_dict[height][key] = round(totalising_dict[height][key]/cnt,3)
     for akey in add_key: 
-        totalising_dict[height][akey] /= dict[akey]
-    print(totalising_dict[height])
+        totalising_dict[height][akey] = round(totalising_dict[height][akey]/dict[akey],3) 
+
+dir_path = "./"
+outputfile = "TotalisedResult.csv"
+OutputPath = Path(dir_path,outputfile)
+with open(OutputPath,'w',newline="") as f: 
+    writer = csv.writer(f)
+    writer.writerow(["Height","#MixerNum","#FreqWithoutPPV","#FreqWithPPV","#FreqWithoutScaling","#FreqWithScaling","#CelluseWithoutPPV","#CelluseWithPPV","#CelluseWithoutScaling","#CelluseWithScaling","#FlushingWithoutPPV","#FlushingWithPPV","#FlushingWithoutScaling","#FlushingWithScaling"])
+    for height in tree_height: 
+        res  = [height]
+        for key in result_key: 
+            res.append(totalising_dict[height][key])
+        for akey in add_key: 
+            res.append(totalising_dict[height][akey])
+        writer.writerow(res)

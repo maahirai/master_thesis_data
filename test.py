@@ -40,7 +40,7 @@ path = Path(result_dir,filename+'.csv')
 print("結果を記入するのは",path)
 with open(path,'w',newline="") as f:
     writer = csv.writer(f)
-    writer.writerow(["InitialHeightOfTree","FreqCelluseWithoutPPValue","FreqCelluseWithPPValue","FreqCelluseWithoutScaling","FreqCelluseWithScaling","CelluseNumWithoutPPValue","CelluseNumWithPPValue","CelluseNumWithoutScaling","CelluseNumWithScaling","FlushingWithoutPPValue","FlushingWithPPValue","FlushingWithoutScaling","FlushingWithScaling"])
+    writer.writerow(["InitialHeightOfTree","MixerCnt","FreqCelluseWithoutPPValue","FreqCelluseWithPPValue","FreqCelluseWithoutScaling","FreqCelluseWithScaling","CelluseNumWithoutPPValue","CelluseNumWithPPValue","CelluseNumWithoutScaling","CelluseNumWithScaling","FlushingWithoutPPValue","FlushingWithPPValue","FlushingWithoutScaling","FlushingWithScaling"])
     for i in range(int(datanum)):
         height,num22,num23,TREE = Scaling.InputTree.genInputTree(int(MaxDepth),0.8,4,fair=True)
         while(height!=int(MaxDepth)): 
@@ -80,7 +80,7 @@ with open(path,'w',newline="") as f:
         FlushingWithoutScaling,CelluseNumWithoutScaling,FreqCelluseNumWithoutScaling = Scaling.flexplace.SamplePreparation(Tree,[pmdsize,pmdsize],ColorList=Scaling.tree.ColorList,IsScalingUsable=False,ImageName=str(i+1)+"_WithoutScaling",ImageOut=False) 
         FlushingWithScaling,CelluseNumWithScaling,FreqCelluseNumWithScaling = Scaling.flexplace.SamplePreparation(TransformedByScaling,[pmdsize,pmdsize],ColorList=Scaling.tree.ColorList,IsScalingUsable=True,ImageName=filename+str(i+1)+"_Scaling",ImageOut=False)
 
-        result = [height,FreqCelluseNumWithoutPPValue,FreqCelluseNumWithPPValue,FreqCelluseNumWithoutScaling,FreqCelluseNumWithScaling,CelluseNumWithoutPPValue,CelluseNumWithPPValue,CelluseNumWithoutScaling,CelluseNumWithScaling,FlushingWithoutPPValue,FlushingWithPPValue,FlushingWithoutScaling,FlushingWithScaling]
+        result = [height,num22+num23,FreqCelluseNumWithoutPPValue,FreqCelluseNumWithPPValue,FreqCelluseNumWithoutScaling,FreqCelluseNumWithScaling,CelluseNumWithoutPPValue,CelluseNumWithPPValue,CelluseNumWithoutScaling,CelluseNumWithScaling,FlushingWithoutPPValue,FlushingWithPPValue,FlushingWithoutScaling,FlushingWithScaling]
         writer.writerow(result)
         print(result)
 
