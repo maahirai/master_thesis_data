@@ -1081,24 +1081,28 @@ def SamplePreparation(root,PMDsize,ColorList=None,IsScalingUsable=False,ProcessO
                 imageName = ImageName+"_"+str(ImageCount)
                 PMDnowSlideImage(imageName,ColorList,PMD,ModuleStates)
             # 現在のミキサーの配置方法では手詰まりなので，該当ミキサーの親ミキサーの配置し直す．
-            RollBackLayout = ModuleStates.PlacementSkippedLayout.pop()
-            RollBackHash = RollBackLayout.PMixerHash
-            RollBackModule = ModuleStates.getModule(RollBackHash)
-            if ProcessOutput:
-                print("手詰まりかも", ModuleStates.ModulesStatesAt)
-                ModuleStates.showModuleNames()
-                print(ModuleStates.ModulesStatesAt)
-                RollBackLayout.show()
-                print(RollBackModule.name,"の子の配置をロールバックし，もう一度配置方法を探索します")
-            # RollBackでは，RollBackHashのMixerとそれ以下のミキサーの全ての状態を一旦NoTreatmentにして，
-            # RollBackHashのミキサーの状態をMixerOnPMDにする．
-            RollBack(RollBackHash)
-            PlaceMixer(RollBackHash,ModuleStates.getModule(RollBackHash).CoveringCell,ModuleStates.getModule(RollBackHash).ProvCell)
-            PlaceChildren(RollBackHash)
-            if ModuleStates.UsingLayout[str(RollBackHash)] in ModuleStates.PreviousLayout[str(RollBackHash)]:
-                if ProcessOutput: 
-                    print("ロールバックもかなわず，",RollBackModule.name,"の子のレイアウトを更新できませんでした")
+            if ModuleStates.ModulesStatesAt["PlacementSkipped"]:
+                RollBackLayout = ModuleStates.PlacementSkippedLayout.pop()
+                RollBackHash = RollBackLayout.PMixerHash
+                RollBackModule = ModuleStates.getModule(RollBackHash)
+                if ProcessOutput:
+                    print("手詰まりかも", ModuleStates.ModulesStatesAt)
+                    ModuleStates.showModuleNames()
+                    print(ModuleStates.ModulesStatesAt)
+                    RollBackLayout.show()
+                    print(RollBackModule.name,"の子の配置をロールバックし，もう一度配置方法を探索します")
+                # RollBackでは，RollBackHashのMixerとそれ以下のミキサーの全ての状態を一旦NoTreatmentにして，
+                # RollBackHashのミキサーの状態をMixerOnPMDにする．
+                RollBack(RollBackHash)
+                PlaceMixer(RollBackHash,ModuleStates.getModule(RollBackHash).CoveringCell,ModuleStates.getModule(RollBackHash).ProvCell)
+                PlaceChildren(RollBackHash)
+                if ModuleStates.UsingLayout[str(RollBackHash)] in ModuleStates.PreviousLayout[str(RollBackHash)]:
+                    if ProcessOutput: 
+                        print("ロールバックもかなわず，",RollBackModule.name,"の子のレイアウトを更新できませんでした")
+                    return -1,-1,-1
+            else : 
                 return -1,-1,-1
+
         else :
             ExcuteStateTransitions()
             if ImageOut and ImageName and ColorList:
