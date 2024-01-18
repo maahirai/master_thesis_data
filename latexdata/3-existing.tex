@@ -1,6 +1,149 @@
-\chapter{\bout{配置優先度}を用いた試薬合成におけるフラッシングの回数削減の既存手法}
-提案手法と試薬合成におけるフラッシング回数を比較する，卒論の手法を説明する．
-\section{\bout{配置優先度}を用いた試薬合成における液滴の混合順序の並び替えアルゴリズム}
-\bout{配置優先度}を用いた試薬合成における液滴の混合順序の並び替えアルゴリズムについて説明する．
-\section{PMD上での2x3ミキサーを用いた液滴の混合手順生成アルゴリズム}
-疑似コードなども，卒研では書いた
+\chapter{\bout{配置優先度}を用いた試薬合成におけるフラッシングの回数削減の既存手法}\label{sec:existing}
+
+\section{アルゴリズムの概要}
+本節では，配置優先度を用いた試薬合成におけるフラッシングの回数削減の既存手法における，処理の流れを説明する．
+
+まず，既存手法での手法全体の入出力データについて説明を行う．
+既存手法の入力は，図~\ref{fig:xntm}（a）の混合木である．
+既存手法の出力は，図~\ref{fig:xntm}（b）から（e）の2x2ミキサーと2x3ミキサーを用いたPMD上における液滴の混合手順である．
+既存手法では，2x2セルを用いる2x2ミキサーに加えて，2x3セルを用いる2x3ミキサーも扱う．
+図~\ref{fig:xntm}（b）から（e）における値Tはミキサーの混合が行われたタイムステップ，値Fはそのタイムステップに至るまでに行ったフラッシング回数を表している．
+
+Algorithm~\ref{alg:allxntm}に，既存手法全体の処理の流れの疑似コードを示した．
+既存手法を大きく分けると，Algorithm~\ref{alg:allxntm}の\ref{alg:modify_placementorder_ppvalue}~行目の配置優先度を用いた試薬合成におけるミキサーの配置方法決定順序の並び替えと，Algorithm~\ref{alg:allxntm}の\ref{alg:xntm_pseudo}~行目のPMD上での2x3ミキサーを用いた液滴の混合手順生成の2つの処理によって構成されている．
+本章では，Algorithm~\ref{alg:allxntm}の\ref{alg:modify_placementorder_ppvalue}~行目の処理である配置優先度を用いた試薬合成におけるミキサーの配置方法決定順序の並び替えについて説明する．
+
+\begin{figure}[tbp]
+ \centering\includegraphics[scale=0.4]{img/xntmInputOutput.pdf}
+ \caption{既存手法の入力：混合木，出力：2x2ミキサーと2x3ミキサーを用いたPMD上での液滴の混合手順}\label{fig:xntm}
+\end{figure}
+
+
+\begin{algorithm}[tbp]
+ \caption{既存手法の処理の流れ}\label{alg:allxntm}
+ \begin{algorithmic}[1]
+     \Require $\mathit{Tree}$：2$\times$2ミキサーノードと2$\times$3ミキサーノード，試薬液滴ノードを含む混合木
+     \Require $\mathit{PMDSize}$：使用するPMDのサイズ
+     \State $\mathit{MixingOrder} \gets$ \Call{SortModulesByPPValue}{$Tree$} \Comment{ミキサーの配置方法決定順序の並び替え}\label{alg:modify_placementorder_ppvalue}
+     \State $\mathit{MixInfo \gets}$\Call{SamplePreparation}{$\mathit{Tree,MixingOrder,PMDSize}$} \Comment{混合手順の生成} \label{alg:xntm_pseudo}
+
+      \Return $\mathit{MixInfo}$
+ \end{algorithmic}
+\end{algorithm}
+
+\section{\bout{配置優先度}を用いた試薬合成における\mout{ミキサーの配置方法決定順序}の並び替えアルゴリズム}
+既存手法において試薬合成中のフラッシング回数削減を担う，配置優先度を用いた試薬合成におけるミキサーの配置方法決定順序の並び替えアルゴリズムを説明する．
+
+配置優先度を用いた試薬合成におけるミキサーの配置方法決定順序の並び替えアルゴリズムは，混合木を入力とし，ミキサーの配置方法決定順序を並び替えた混合木を出力する．
+配置優先度を用いた試薬合成におけるミキサーの配置方法決定順序の並び替えアルゴリズムではまず，入力された混合木内の全ての混合ノードに配置優先度Placement Priority Value（PP Value）という値を割り当てる．
+混合ノードMnの配置優先度は，式~\eqref{equ:PP}で計算される．
+$pweight$には，Mnが2x3ミキサーの混合ノードの場合は1.5，2x2ミキサーの混合ノードの場合は1.0が代入される．
+$weight$も同様に，Mnの子ノードが2x3ミキサーの混合ノードの場合は1.5，2x2ミキサーの混合ノードの場合は1.0が代入される．
+例えば，図~\ref{fig:placementTree}のM3の配置優先度はPP(M3)＝1.5*(1.0*(1+PP(M6))+1.5*(1+PP(M7)))=1.5*(1.0*1+1.5*1)=3.75と計算される．
+表~\ref{table:PPValueExample}に，図~\ref{fig:placementTree}の混合木の各混合ノードに割り当てられる配置優先度の一覧を示す．
+配置優先度の式~\eqref{equ:PP}は，混合ノードを多く含む混合木ほど高い値を算出するように設計されている．
+また，$weight，pweight$で重みづけしていることから分かる通り，配置優先度の式~\eqref{equ:PP}は2x3ミキサーの混合ノードを多く含む混合木ほど高い値を算出するように設計されている．
+配置優先度の割り当て後，各混合ノードの子ノードの配置方法決定順序を，配置優先度の順に並び替える．
+表~\ref{table:PPValueExample}から分かるように，PP(M2)$>$PP(M1)，PP(M5)$>$PP(M4)である．
+したがって，M0の子ノードの配置方法決定順序はM2，M1の順になる．
+また，M2の子ノードの配置方法決定順序はM5，M4の順になる．
+
+
+\begin{align}
+PP(Mn)=pweight * \sum(weight *(1+PP(Mnの子ノード))).
+\label{equ:PP}
+\end{align}
+
+\begin{table}[tbp]
+\centering
+    \caption{図~\ref{fig:placementTree}の各混合ノードに割り当てられる配置優先度の値}
+\begin{tabular}{l|r|r|r|r|r|r|r|r|r|r|r|r} \Hline
+    &\multicolumn{1}{l|}{M1}& \multicolumn{1}{l|}{M2} & \multicolumn{1}{l|}{M3} & \multicolumn{1}{l|}{M4}& \multicolumn{1}{l|}{M5}& \multicolumn{1}{l|}{M6}& \multicolumn{1}{l|}{M7}& \multicolumn{1}{l|}{M8}& \multicolumn{1}{l|}{M9}& \multicolumn{1}{l|}{M10}& \multicolumn{1}{l|}{M11}& \multicolumn{1}{l}{M12}\\\hline\hline
+    配置優先度 & 10.6875& 11.75& 3.75& 2.5& 4.5& 0& 0& 0& 0& 0& 0& 0 \\\hline
+\end{tabular}
+\label{table:PPValueExample}
+\end{table}
+
+%配置優先度は，$Mn$を根とした部分木内の全ての混合ノードのミキサーが使用するPMDのセル数の総和を推定することを狙いとした値である．
+高い配置優先度を割り当てられた部分木内の混合ノードのミキサーをPMD上に配置する際には，親ノードのミキサーの配置セルの周辺に，多くの子ノードのミキサーを配置する必要がある．その場合，それぞれの子ノードのミキサーが近接して配置される可能性が高い．
+したがって，高い配置優先度を割り当てられた部分木内の混合ノードのミキサーの配置を行う際には，ミキサーのオーバーラップを発生する可能性が高い．
+配置優先度を用いた試薬合成におけるミキサーの配置方法決定順序の並び替えアルゴリズムの狙いは，ミキサーのオーバーラップを発生させる可能性の高い部分木内の混合ノードほど，PMD上に空きセルが多い，小さいタイムステップで優先的に配置方法を探索させ，ミキサーのオーバーラップが発生しない配置方法を選択することである．
+%次に，既存手法の1つ目の処理である，配置優先度を用いた試薬合成におけるミキサーの配置方法決定順序の並び替えアルゴリズムを説明する．
+配置優先度を用いた試薬合成におけるミキサーの配置方法決定順序の並び替えアルゴリズムの疑似コードを，Algorithm~\ref{alg:PPValue}に示す．
+\begin{algorithm}[tbp]
+ \caption{ミキサーの配置方法決定順序の並び替え}\label{alg:PPValue}
+ \begin{algorithmic}[1]
+     \Require $\mathit{Tree}$：2$\times$2ミキサーノードと2$\times$3ミキサーノード，試薬液滴ノードを含む混合木 
+
+     \Function {SortByPPValue}{$\mathit{Tree}$}
+        \State $\mathit{Children}$ = array()
+       \ForAll {$\mathit{child}\gets \mathit{Tree.root.ChildrenMixingOrder}$}
+            \State $\mathit{PPValue}=$\Call{ PPValue}{$child$} \Comment{混合木の部分木のルートである$\mathit{child}$の配置優先度}
+            \State Children.append(($\mathit{PPValue},child$))
+        \EndFor 
+        \State $\mathit{SortedByPPValue} \gets $sorted($Children,reverse=$\True)\Comment{$\mathit{PPValue}$をキー値に降順でソート}
+        \State $\mathit{res}\gets$array()
+        \ForAll {$\mathit{PPValue,child}\gets \mathit{SortedByPPValue}$}
+            \State $\mathit{PlacementOrderModifiedSubTree}\gets $\Call {SortByPPValue}{$\mathit{child}$}
+            \State $\mathit{res}$.append($\mathit{PlacementOrderModifiedSubTree}$) \EndFor 
+        \State $\mathit{PlacementOrderModifiedTree}\gets \mathit{Tree}$ 
+        \State $\mathit{PlacementOrderModifiedTree.root.ChildrenMixingOrder}\gets \mathit{res}
+        $\Return $\mathit{PlacementOrderModifiedTree}$ 
+    \EndFunction 
+    
+     \State $\mathit{MixerVal}\gets$array($-1,\mathit{Tree.MixerNum}$)
+     \Function {PPValue}{$\mathit{Tree}$}
+        \If {$Tree.root.isMixer == False$}\Return 0
+        \Else 
+            \State $\mathit{idx}\gets \mathit{Tree.root.MixerIndex}$
+            \If {$\mathit{MixerVal[idx]} \geq 0$}\Return MixerVal[idx]
+            \Else 
+                \State  $\mathit{v}\gets 0$
+                        \State $\mathit{pweight} \gets 1.0$
+                        \If {$\mathit{Tree.root.size}== 6 $}
+                            \State $\mathit{pweight} \gets 1.5$
+                        \EndIf
+                \ForAll {$\mathit{child}\gets \mathit{Tree.root.Children}$}
+                    \If {$\mathit{child.isMixer} $}
+                        \State $\mathit{weight} \gets 1.0$
+                        \If {$\mathit{child.size}== 6 $}
+                            \State $\mathit{weight} \gets 1.5$
+                        \EndIf 
+                        \State $v+=\mathit{pweight*weight*(1+}$\Call{PPValue}{$\mathit{child}$})
+                    \EndIf 
+                \EndFor 
+                \State $\mathit{MixerVal[idx]}\gets v$
+                \Return $\mathit{MixerVal[idx]}$
+            \EndIf
+        \EndIf
+    \EndFunction 
+ \end{algorithmic}
+\end{algorithm}
+
+%図~\ref{fig:placementTree}の混合木を入力とした場合の，ミキサーの配置方法決定順序の並び替えなしでのミキサーの配置過程を図~\ref{fig:placementWithout}に，ミキサーの配置方法決定順序の並び替えを行なった場合でのミキサーの配置過程を図~\ref{fig:placementWith}に示す．
+%ミキサーの配置方法決定順序の並び替えの有無によって，図~\ref{fig:placementWithout}と図~\ref{fig:placementWith}ではミキサーの配置方法が異なっているのが分かる．
+%また，ミキサーの配置方法決定順序の並び替えなしの場合での試薬合成では，フラッシング回数が8回だった．それに対して，ミキサーの配置方法決定順序の並び替えを行った場合の試薬合成では，フラッシング回数が6回だった．
+%したがって，図~\ref{fig:placementTree}の混合木の試薬合成においては，ミキサーの配置方法決定順序の並び替えによって，フラッシング回数は削減される．
+
+%Algorithmの\ref{alg:xntm_pseudo}~行目の処理である，PMD上での2x3ミキサーを用いた液滴の混合手順生成では，試薬合成を行う際のミキサーの配置順序を基に，ミキサーの混合順序を出力する．
+
+\begin{figure}[tbp]
+    \centering\includegraphics[scale=1.0]{img/MixingTreeForPlacementExample.pdf}
+ \caption{試薬合成の対象となる混合木}\label{fig:placementTree}
+\end{figure}
+%\begin{figure}[tbp]
+%    \begin{center}
+%    \centering\includegraphics[scale=0.87]{img/placementWithoutPPValue.pdf}
+% \caption{ミキサーの配置方法決定順序の並び替えなしでのミキサーの配置過程}\label{fig:placementWithout}
+%    \end{center}
+%\end{figure}
+%\begin{figure}[tbp]
+%    \centering\includegraphics[scale=0.87]{img/placementWithPPValue.pdf}
+% \caption{ミキサーの配置方法決定順序の並び替えを行なった場合でのミキサーの配置過程}\label{fig:placementWith}
+%\end{figure}
+%\section{PMD上での2x3ミキサーを用いた液滴の混合手順生成アルゴリズム}
+%まず，既存手法の2つ目の処理である，PMD上での2x3ミキサーを用いた液滴の混合手順生成のアルゴリズムについて説明する．
+
+高さ3の混合木を入力とした場合，配置優先度を用いた試薬合成におけるミキサーの配置方法決定順序の並び替えアルゴリズムによって，試薬合成中における平均フラッシング回数は増加する~\cite{10089903}．
+したがって，特に高さの低い混合木が入力となった場合の既存手法のフラッシング回数の削減効果は高いと言えず，改善の余地がある．
+
