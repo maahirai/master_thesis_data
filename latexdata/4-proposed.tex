@@ -1,5 +1,36 @@
 \chapter{スケーリングを用いた試薬合成中におけるフラッシング回数の削減手法}
-本章では，提案手法について説明する．
+\section{\mout{アルゴリズムの概要}}
+本論文の提案手法である，スケーリングを用いた試薬合成中におけるフラッシング回数の削減手法は，スケーリングという処理を行うことで入力された混合木の変形を行い，試薬合成中に行われるフラッシングの回数を削減する手法である．
+本節では，スケーリングを用いた試薬合成中におけるフラッシング回数の削減手法の処理の流れを説明する．
+
+提案手法での手法全体の入出力データについて説明を行う．
+提案手法の入力は，図~\ref{fig:ScalingInputOutput}（a）の混合木である．この混合木は，図~\ref{fig:xntm}（a）と同じ混合木である．
+提案手法の出力は，図~\ref{fig:ScalingInputOutput}（b）から（d）のPMD上での試薬合成における液滴の混合手順である．
+図~\ref{fig:ScalingInputOutput}（b）から（d）における値Tはミキサーの混合が行われたタイムステップ，値Fはそのタイムステップに至るまでに行ったフラッシング回数を表している．
+
+既存手法では，図~\ref{fig:xntm}で示した通り，図~\ref{fig:ScalingInputOutput}（a）の混合木の試薬合成に1回のフラッシングを必要とする．
+それに対して，提案手法は図~\ref{fig:ScalingInputOutput}（a）の混合木の試薬合成をフラッシングなしで行うことが可能である．
+したがって，図~\ref{fig:ScalingInputOutput}（a）の混合木の試薬合成においては，提案手法は既存手法よりフラッシングを削減することに成功している．
+
+Algorithm~\ref{alg:allscaling}に，提案手法全体の処理の流れの疑似コードを示した．
+提案手法を大きく分けると，Algorithm~\ref{alg:allscaling}の\ref{alg:scaling_pseudo}~行目のスケーリングを用いた入力混合木の変形処理と，Algorithm~\ref{alg:allscaling}の\ref{alg:samplepreparation_pseudo}~行目のPMD上での液滴の混合手順生成の2つの処理によって構成されている．
+
+\begin{figure}[tbp]
+ \centering\includegraphics[scale=0.51]{img/ScalingInputOutput.pdf}
+ \caption{提案手法の入力：混合木，出力：PMD上での液滴の混合手順}\label{fig:ScalingInputOutput}
+\end{figure}
+
+\begin{algorithm}[tbp]
+ \caption{提案手法の処理の流れ}\label{alg:allscaling}
+ \begin{algorithmic}[1]
+     \Require $\mathit{Tree}$：2$\times$2ミキサーノードと2$\times$3ミキサーノード，試薬液滴ノードを含む混合木
+     \Require $\mathit{PMDSize}$：使用するPMDのサイズ
+     \State $\mathit{TransformedTree} \gets$ \Call{Scaling}{$Tree$} \Comment{スケーリングを用いた入力混合木の変形}\label{alg:scaling_pseudo}
+     \State $\mathit{MixInfo \gets}$\Call{SamplePreparation}{$\mathit{Tree,PMDSize}$} \Comment{混合手順の生成} \label{alg:samplepreparation_pseudo}
+
+      \Return $\mathit{MixInfo}$
+ \end{algorithmic}
+\end{algorithm}
 
 \section{スケーリングを用いた入力混合木の変形アルゴリズム}
 \subsection{スケーリングの概要}
@@ -10,7 +41,7 @@
 \item 混合木を入力として受け取った直後に，その混合木に含まれるIFが必要となる可能性の高い提供比率のx2スケーリングを行う．
 \end{itemize}
 \section{PMD上での大きなミキサーを用いた液滴の混合手順生成アルゴリズム}
-\subsection{使用セル数推定値を用いた試薬合成における液滴の混合順序の\\並び替えアルゴリズム}
+\subsection{使用セル数推定値を用いた試薬合成における\mout{ミキサーの配置方法決定順序}の並び替えアルゴリズム}
 \begin{itemize}
 \item ミキサーを根とした部分木の使用セル数を推定した値の順番に，試薬合成における液滴の混合順序を並び替える.
 \end{itemize}
