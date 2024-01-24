@@ -6,15 +6,16 @@ from pathlib import Path
 
 # test.pyの上位モジュール
 tree_height = ["2","3","4"]
-result_key = ["MixerCnt","FreqCelluseWithoutPPValue","FreqCelluseWithPPValue","FreqCelluseWithoutScaling","FreqCelluseWithScaling","CelluseNumWithoutPPValue","CelluseNumWithPPValue","CelluseNumWithoutScaling","CelluseNumWithScaling","FlushingWithoutPPValue","FlushingWithPPValue","FlushingWithoutScaling","FlushingWithScaling"]
-add_key = ["ReductionRateByPPValue","ReductionRateByScaling"]
+result_key = ["MixerCnt","FreqCelluseWithoutPPValue","FreqCelluseWithPPValue","FreqCelluseWithoutScaling","FreqCelluseWithScaling","CelluseNumWithoutPPValue","CelluseNumWithPPValue","CelluseNumWithoutScaling","CelluseNumWithScaling","OverlappWithoutPPValue","OverlappWithPPValue","OverlappWithoutScaling","OverlappWithScaling","FlushingWithoutPPValue","FlushingWithPPValue","FlushingWithoutScaling","FlushingWithScaling"]
+add_key = ["OverlappReductionRateByPPValue","OverlappReductionRateByScaling","FlushingReductionRateByPPValue","FlushingReductionRateByScaling"]
+
 totalising_dict = {}
 datanum_cnt = {}
 
 # 集計を行う変数の初期化
 for height in tree_height: 
     totalising_dict[height] = {}
-    datanum_cnt[height] = (0,{"ReductionRateByPPValue":0,"ReductionRateByScaling":0})
+    datanum_cnt[height] = (0,{"OverlappReductionRateByPPValue":0,"OverlappReductionRateByScaling":0,"FlushingReductionRateByPPValue":0,"FlushingReductionRateByScaling":0})
     for key in result_key: 
         totalising_dict[height][key] = 0
     for akey in add_key: 
@@ -47,14 +48,25 @@ for filename in files:
                                 totalising_dict[height][key] += int(row[key])
                         
                         if int(row["FlushingWithoutPPValue"])>0:
-                            totalising_dict[height]["ReductionRateByPPValue"] += (1-(int(row["FlushingWithPPValue"])/int(row["FlushingWithoutPPValue"])))*100
+                            totalising_dict[height]["FlushingReductionRateByPPValue"] += (1-(int(row["FlushingWithPPValue"])/int(row["FlushingWithoutPPValue"])))*100
                             overallnum,dict = datanum_cnt[height] 
-                            dict["ReductionRateByPPValue"] += 1
+                            dict["FlushingReductionRateByPPValue"] += 1
                             datanum_cnt[height] = (overallnum,dict)
-                        if int(row["FlushingWithoutScaling"])>0:
-                            totalising_dict[height]["ReductionRateByScaling"] += (1-(int(row["FlushingWithScaling"])/int(row["FlushingWithoutScaling"])))*100
+                        if int(row["OverlappWithoutPPValue"])>0:
+                            totalising_dict[height]["OverlappReductionRateByPPValue"] += (1-(int(row["OverlappWithPPValue"])/int(row["OverlappWithoutPPValue"])))*100
                             overallnum,dict = datanum_cnt[height] 
-                            dict["ReductionRateByScaling"] += 1
+                            dict["OverlappReductionRateByPPValue"] += 1
+                            datanum_cnt[height] = (overallnum,dict)
+
+                        if int(row["FlushingWithoutScaling"])>0:
+                            totalising_dict[height]["FlushingReductionRateByScaling"] += (1-(int(row["FlushingWithScaling"])/int(row["FlushingWithoutScaling"])))*100
+                            overallnum,dict = datanum_cnt[height] 
+                            dict["FlushingReductionRateByScaling"] += 1
+                            datanum_cnt[height] = (overallnum,dict)
+                        if int(row["OverlappWithoutScaling"])>0:
+                            totalising_dict[height]["OverlappReductionRateByScaling"] += (1-(int(row["OverlappWithScaling"])/int(row["OverlappWithoutScaling"])))*100
+                            overallnum,dict = datanum_cnt[height] 
+                            dict["OverlappReductionRateByScaling"] += 1
                             datanum_cnt[height] = (overallnum,dict)
         #else : 
         #    print(full_path) 
@@ -72,7 +84,7 @@ outputfile = "TotalisedResult.csv"
 OutputPath = Path(dir_path,outputfile)
 with open(OutputPath,'w',newline="") as f: 
     writer = csv.writer(f)
-    writer.writerow(["Height","#MixerNum","#FreqWithoutPPV","#FreqWithPPV","#FreqWithoutScaling","#FreqWithScaling","#CelluseWithoutPPV","#CelluseWithPPV","#CelluseWithoutScaling","#CelluseWithScaling","#FlushingWithoutPPV","#FlushingWithPPV","#FlushingWithoutScaling","#FlushingWithScaling"])
+    writer.writerow(["Height","#MixerNum","#FreqWithoutPPV","#FreqWithPPV","#FreqWithoutScaling","#FreqWithScaling","#CelluseWithoutPPV","#CelluseWithPPV","#CelluseWithoutScaling","#CelluseWithScaling","#OverlappWithoutPPV","#OverlappWithPPV","#OverlappWithoutScaling","#OverlappWithScaling","#FlushingWithoutPPV","#FlushingWithPPV","#FlushingWithoutScaling","#FlushingWithScaling","OverlappReductionRateByPPValue","OverlappReductionRateByScaling","FlushingReductionRateByPPValue","FlushingReductionRateByScaling"])
     for height in tree_height: 
         res  = [height]
         for key in result_key: 
