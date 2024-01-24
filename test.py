@@ -40,7 +40,9 @@ path = Path(result_dir,filename+'.csv')
 print("結果を記入するのは",path)
 with open(path,'w',newline="") as f:
     writer = csv.writer(f)
-    writer.writerow(["InitialHeightOfTree","MixerCnt","FreqCelluseWithoutPPValue","FreqCelluseWithPPValue","FreqCelluseWithoutScaling","FreqCelluseWithScaling","CelluseNumWithoutPPValue","CelluseNumWithPPValue","CelluseNumWithoutScaling","CelluseNumWithScaling","FlushingWithoutPPValue","FlushingWithPPValue","FlushingWithoutScaling","FlushingWithScaling"])
+    #writer.writerow(["InitialHeightOfTree","MixerCnt","FreqCelluseWithoutPPValue","FreqCelluseWithPPValue","FreqCelluseWithoutScaling","FreqCelluseWithScaling","CelluseNumWithoutPPValue","CelluseNumWithPPValue","CelluseNumWithoutScaling","CelluseNumWithScaling","FlushingWithoutPPValue","FlushingWithPPValue","FlushingWithoutScaling","FlushingWithScaling"])
+    # オーバーラップのデータも取る
+    writer.writerow(["InitialHeightOfTree","MixerCnt","FreqCelluseWithoutPPValue","FreqCelluseWithPPValue","FreqCelluseWithoutScaling","FreqCelluseWithScaling","CelluseNumWithoutPPValue","CelluseNumWithPPValue","CelluseNumWithoutScaling","CelluseNumWithScaling","OverlappWithoutPPValue","OverlappWithPPValue","OverlappWithoutScaling","OverlappWithScaling","FlushingWithoutPPValue","FlushingWithPPValue","FlushingWithoutScaling","FlushingWithScaling"])
     for i in range(int(datanum)):
         height,num22,num23,TREE = Scaling.InputTree.genInputTree(int(MaxDepth),0.8,4,fair=True)
         while(height!=int(MaxDepth)): 
