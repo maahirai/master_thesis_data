@@ -61,8 +61,8 @@ with open(path,'w',newline="") as f:
         XNTM.tree.viewTree(TransformedByPPValue)
         #ColorList = tree.ColorList
         #print("カラーリスト",tree.ColorList)
-        FlushingWithoutPPValue,CelluseNumWithoutPPValue,FreqCelluseNumWithoutPPValue = XNTM.xntm(Tree,[pmdsize,pmdsize],ColorList=XNTM.tree.ColorList,ImageName=str(i+1)+"_WithoutPPValue",ImageOut=False) 
-        FlushingWithPPValue,CelluseNumWithPPValue,FreqCelluseNumWithPPValue = XNTM.xntm(TransformedByPPValue,[pmdsize,pmdsize],ColorList=XNTM.tree.ColorList,ImageName=str(i+1)+"_PPValue",ImageOut=False)
+        FlushingWithoutPPValue,OverlappWithoutPPValue,CelluseNumWithoutPPValue,FreqCelluseNumWithoutPPValue = XNTM.xntm(Tree,[pmdsize,pmdsize],ColorList=XNTM.tree.ColorList,ImageName=str(i+1)+"_WithoutPPValue",ImageOut=False) 
+        FlushingWithPPValue,OverlappWithPPValue,CelluseNumWithPPValue,FreqCelluseNumWithPPValue = XNTM.xntm(TransformedByPPValue,[pmdsize,pmdsize],ColorList=XNTM.tree.ColorList,ImageName=str(i+1)+"_PPValue",ImageOut=False)
         
         # Scaling
         Tree = Scaling.tree.InputToTree(TREE)
@@ -79,10 +79,11 @@ with open(path,'w',newline="") as f:
         #Scaling.tree.saveTree(TransformedByScaling,filename)
         Scaling.tree.viewTree(TransformedByScaling)
         #ColorList = tree.ColorList
-        FlushingWithoutScaling,CelluseNumWithoutScaling,FreqCelluseNumWithoutScaling = Scaling.flexplace.SamplePreparation(Tree,[pmdsize,pmdsize],ColorList=Scaling.tree.ColorList,IsScalingUsable=False,ImageName=str(i+1)+"_WithoutScaling",ImageOut=False) 
-        FlushingWithScaling,CelluseNumWithScaling,FreqCelluseNumWithScaling = Scaling.flexplace.SamplePreparation(TransformedByScaling,[pmdsize,pmdsize],ColorList=Scaling.tree.ColorList,IsScalingUsable=True,ImageName=filename+str(i+1)+"_Scaling",ImageOut=False)
+        FlushingWithoutScaling,OverlappWithoutScaling,CelluseNumWithoutScaling,FreqCelluseNumWithoutScaling = Scaling.flexplace.SamplePreparation(Tree,[pmdsize,pmdsize],ColorList=Scaling.tree.ColorList,IsScalingUsable=False,ImageName=str(i+1)+"_WithoutScaling",ImageOut=False) 
+        FlushingWithScaling,OverlappWithScaling,CelluseNumWithScaling,FreqCelluseNumWithScaling = Scaling.flexplace.SamplePreparation(TransformedByScaling,[pmdsize,pmdsize],ColorList=Scaling.tree.ColorList,IsScalingUsable=True,ImageName=filename+str(i+1)+"_Scaling",ImageOut=False)
 
-        result = [height,num22+num23,FreqCelluseNumWithoutPPValue,FreqCelluseNumWithPPValue,FreqCelluseNumWithoutScaling,FreqCelluseNumWithScaling,CelluseNumWithoutPPValue,CelluseNumWithPPValue,CelluseNumWithoutScaling,CelluseNumWithScaling,FlushingWithoutPPValue,FlushingWithPPValue,FlushingWithoutScaling,FlushingWithScaling]
+        result = [height,num22+num23,FreqCelluseNumWithoutPPValue,FreqCelluseNumWithPPValue,FreqCelluseNumWithoutScaling,FreqCelluseNumWithScaling,CelluseNumWithoutPPValue,CelluseNumWithPPValue,CelluseNumWithoutScaling,CelluseNumWithScaling,OverlappWithoutPPValue,OverlappWithPPValue,OverlappWithoutScaling,OverlappWithScaling,FlushingWithoutPPValue,FlushingWithPPValue,FlushingWithoutScaling,FlushingWithScaling]
+
         writer.writerow(result)
         print(result)
 
