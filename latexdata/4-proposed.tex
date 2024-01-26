@@ -8,6 +8,7 @@
 提案手法の出力は，図~\ref{fig:ScalingInputOutput}（b）から（d）のPMD上での試薬合成における液滴の混合手順である．
 図~\ref{fig:ScalingInputOutput}（b）から（d）における値Tはミキサーの混合が行われたタイムステップ，値Fはそのタイムステップに至るまでに行ったフラッシング回数を表している．
 
+提案手法では，既存手法である平井らの手法よりも少ないフラッシング回数で試薬合成を行うことを目指した．
 平井らの手法では，図~\ref{fig:xntm}で示した通り，図~\ref{fig:ScalingInputOutput}（a）の混合木の試薬合成に1回のフラッシングを必要とする．
 それに対して，提案手法は図~\ref{fig:ScalingInputOutput}（a）の混合木の試薬合成をフラッシングなしで行うことが可能である．
 したがって，図~\ref{fig:ScalingInputOutput}（a）の混合木の試薬合成においては，提案手法は平井らの手法よりフラッシングを削減することに成功している．
@@ -26,7 +27,7 @@ Algorithm~\ref{alg:allscaling}に，提案手法全体の処理の流れの疑�
      \Require $\mathit{Tree}$：2$\times$2ミキサーノードと2$\times$3ミキサーノード，試薬液滴ノードを含む混合木
      \Require $\mathit{PMDSize}$：使用するPMDのサイズ
      \State $\mathit{TransformedTree} \gets$ \Call{Scaling}{$Tree$} \Comment{スケーリングを用いた入力混合木の変形}\label{alg:scaling_pseudo}
-     \State $\mathit{MixInfo \gets}$\Call{SamplePreparation}{$\mathit{Tree,PMDSize}$} \Comment{混合手順の生成} \label{alg:samplepreparation_pseudo}
+     \State $\mathit{MixInfo \gets}$\Call{SamplePreparation}{$\mathit{TransformdeTree,PMDSize}$} \Comment{混合手順の生成} \label{alg:samplepreparation_pseudo}
 
       \Return $\mathit{MixInfo}$
  \end{algorithmic}
@@ -35,25 +36,15 @@ Algorithm~\ref{alg:allscaling}に，提案手法全体の処理の流れの疑�
 \section{スケーリングを用いた入力混合木の変形アルゴリズム}
 本節では，Algorithm~\ref{alg:allscaling}の\ref{alg:scaling_pseudo}~行目のスケーリングを用いた入力混合木の変形処理について説明する．
 %混合木の図などを用いてスケーリングという操作について説明を行う．
-\subsection{スケーリングの概要}
+\subsection{スケーリングの概要}\label{sec:ScalingAbout}
 %図~\ref{fig:Scaling}（a）に，スケーリングを用いた入力混合木の変形を行う前の混合木，図~\ref{fig:Scaling}（b）に，スケーリングを用いた入力混合木の変形後の混合木を示した．
 スケーリングは，混合木内の任意の提供比率を2倍にする操作である．
 図~\ref{fig:Scaling}（a）の混合木において，M5への提供比率に対するスケーリングを行った場合，図~\ref{fig:Scaling}（b）の混合木になる．
 M5への提供比率に対するスケーリングによって，図~\ref{fig:Scaling}（a）の混合木では3:1だったM5への提供比率は，図~\ref{fig:Scaling}（b）の混合木では2倍されて6:2となっている．
 また，スケーリングによって，M5のミキサーサイズは4から8へと変化している．
 
-図~\ref{fig:ScalingInDetail}は，図~\ref{fig:Scaling}におけるM5への提供比率に対するスケーリングの過程を詳細に示した図である．
-まず，図~\ref{fig:ScalingInDetail}（a），（b）間では，スケーリングの対象となるM5への提供比率を2倍にしている．
-その結果，図~\ref{fig:ScalingInDetail}（b）の混合木のように，混合木内に矛盾点が生じる場合がある．
-図~\ref{fig:ScalingInDetail}（b）の混合木における矛盾点とは，ミキサーサイズ4の混合ノードM9がM5への提供比率において6個の中間液滴を提供することになっているというものだ．
-自身のサイズ以上の体積の中間液滴を，ミキサーは提供することはできない．
-M9のミキサーが，6個の中間液滴を親ノードであるM5のミキサーに提供するためには，ミキサーサイズを6より大きくする必要がある．
-したがって，図~\ref{fig:ScalingInDetail}（b），(c）間ではM9への提供比率もスケーリングによって2倍にすることで，M9のミキサーサイズを8にしている．
-M9への提供比率に対する操作によって，混合木内の矛盾点は無くなる．
-スケーリング後の図~\ref{fig:ScalingInDetail}（c）は，図~\ref{fig:Scaling}（b）と同一の混合木である．
-
 \begin{figure}[tbp]
- \centering\includegraphics[scale=0.7]{img/Scaling.pdf}
+ \centering\includegraphics[scale=0.8]{img/Scaling.pdf}
  \caption{スケーリングを用いた入力混合木の変形}\label{fig:Scaling}
 \end{figure}
 
@@ -62,8 +53,18 @@ M9への提供比率に対する操作によって，混合木内の矛盾点は
  \caption{スケーリングを用いた入力混合木の変形の詳細}\label{fig:ScalingInDetail}
 \end{figure}
 
+図~\ref{fig:ScalingInDetail}は，図~\ref{fig:Scaling}におけるM5への提供比率に対するスケーリングの過程を詳細に示した図である．
+まず，図~\ref{fig:ScalingInDetail}（a），（b）間では，スケーリングの対象となるM5への提供比率を2倍にしている．
+その結果，図~\ref{fig:ScalingInDetail}（b）の混合木のように，混合木内に矛盾点が生じる場合がある．
+図~\ref{fig:ScalingInDetail}（b）の混合木における矛盾点とは，ミキサーサイズ4の混合ノードM9がM5への提供比率において6個の中間液滴を提供することになっているというものだ．
+自身のサイズ以上の個数の中間液滴を，ミキサーは提供することはできない．
+M9のミキサーが，6個の中間液滴を親ノードであるM5のミキサーに提供するためには，ミキサーサイズを6より大きくする必要がある．
+したがって，図~\ref{fig:ScalingInDetail}（b），(c）間ではM9への提供比率もスケーリングによって2倍にすることで，M9のミキサーサイズを8にしている．
+M9への提供比率に対する操作によって，混合木内の矛盾点は無くなる．
+スケーリング後の図~\ref{fig:ScalingInDetail}（c）は，図~\ref{fig:Scaling}（b）と同一の混合木である．
+
 \begin{figure}[tbp]
- \centering\includegraphics[scale=0.44]{img/merge.pdf}
+ \centering\includegraphics[scale=0.5]{img/merge.pdf}
  \caption{スケーリングの際に発生する，混合ノードのマージ}\label{fig:Merge}
 \end{figure}
 
@@ -71,13 +72,14 @@ M9への提供比率に対する操作によって，混合木内の矛盾点は
 スケーリング後に混合ノードのマージを行う混合木の例を，図~\ref{fig:Merge}に示す．
 図~\ref{fig:Merge}では，M0への提供比率に対するスケーリングを行う．
 スケーリングによって，図~\ref{fig:Merge}（a）の混合木において2:1:1だったM0への提供比率は，図~\ref{fig:Merge}（b）の混合木において4:2:2になっている．
-図~\ref{fig:Merge}（b）の混合木において，ミキサーサイズ4のM1のミキサーは，混合した4個全ての中間液滴を親ノードのミキサーに提供することになっている．
-混合した全ての中間液滴を親ノードのミキサーへ提供する，M1のミキサーでの液滴の混合は無意味であるため，省略可能である．
-したがって，混合ノードM1を削除することで，図~\ref{fig:Merge}（b）の混合木には図~\ref{fig:Merge}（c）の混合木への変形が行われる．
+図~\ref{fig:Merge}（b）の混合木において，ミキサーサイズ4のM1は，ミキサーで混合した4個の液滴の全てを親ノードM0のミキサーに提供する．
+このとき，M1のミキサーへと提供される液滴を，M1のミキサーで混合せずにそのままM0のミキサーへ受け渡し，M0のミキサーで混合される液滴の一部としても，最終的に生成される液滴の濃度は変わらない．
+したがって，M1のミキサーでの液滴の混合は行う必要がないため，省略可能である．
+省略可能な混合ノードM1を削除することで，図~\ref{fig:Merge}（b）の混合木には図~\ref{fig:Merge}（c）の混合木への変形が行われる．
 このように，スケーリングに伴って，省略可能になった混合ノードを混合木から削除する操作のことを，混合ノードのマージという．
 
 \subsection{試薬合成中に行われるフラッシングの回数を増加させる提供比率}\label{ratio}
-\ref{sec:flushing}~節では，各ノードの提供比率など混合木の情報から，ミキサーのオーバーラップの発生を予測することがある程度可能であることについて述べた．
+\ref{sec:flushing}~節では，提供比率などの情報から，ミキサーのオーバーラップの発生を予測することがある程度可能であることを述べた．
 本節では，提供比率とミキサーのオーバーラップの関係性と，試薬合成中に行われるフラッシング回数を削減するためのスケーリングの活用方法について述べる．
 
 表~\ref{table:ProvRatioGroup}に，試薬合成中にミキサーのオーバーラップを発生させる確率に基づいて分けられた，提供比率のグループを示す．
@@ -85,25 +87,6 @@ M9への提供比率に対する操作によって，混合木内の矛盾点は
 最もミキサーのオーバーラップを発生させる確率が高いグループAは，図~\ref{fig:flushing}（a）の点線部の5:1のような，5などの3以上の奇数個の液滴を提供する混合ノードが含まれる提供比率である．
 \ref{sec:flushing}~節で説明した通り，グループAの提供比率はミキサーのオーバーラップを発生させることが確定しており，オーバーラップ確定提供比率と呼ばれる．
 提供比率がグループAに属するか否かの判定には，提供比率に含まれる混合ノード数は関係ないので，混合ノード数の条件は＊（ドントケア)とした．
-
-あるノードの子ノードのミキサーは，自身の親ノードのミキサーの配置セルと重なるように配置される．
-したがって，特に親ノードのミキサーサイズが4や6など小さい場合，それぞれの子ノードのミキサーの配置セルは近接しやすい．
-ゆえに，提供比率に含まれる混合ノード数が多いほど，兄弟ノード同士でのミキサーのオーバーラップが発生しやすいといえる．
-したがって，グループBとグループCの提供比率は，提供比率に含まれる混合ノード数で区分する．
-2番目にミキサーのオーバーラップを発生させる確率が高いグループBは，提供比率に含まれる混合ノード数が3個以上であることが所属の条件となる．
-また，最もミキサーのオーバーラップを発生させる確率が低いグループCは，提供比率に含まれる混合ノード数が0個から2個であることが所属の条件となる．
-
-本節で説明した通り，スケーリングは混合ノードの提供比率を変更する．
-提案手法は，スケーリングを行うことで，グループAの提供比率をグループBかグループCの提供比率に変更する．
-提案手法では，スケーリングを行うことで，混合木内のグループAの提供比率の数を削減する．
-
-また，スケーリング後の提供比率に含まれる混合ノード数が増加しない場合，提案手法はグループBの提供比率に対してもスケーリングを行う．
-スケーリングは，液滴の提供を受ける親ノードのミキサーサイズを増大させる．
-親ノードのミキサーが大きいほど，子ノードのミキサーの配置方法の選択肢は増大する．
-したがって，スケーリングを行うことによって子ノードのミキサーの配置方法の選択肢が増え，ミキサーのオーバーラップが発生しない，ミキサーの配置方法の選択が容易になる．
-
-以上で述べた通り，提案手法は，グループAとグループBの提供比率に対してスケーリングを行うことで，よりミキサーのオーバーラップを発生させにくい提供比率に変更する．
-提案手法によって，ミキサーのオーバーラップが発生しにくくなり，試薬合成におけるフラッシング回数は削減される．
 
 \begin{table}[tbp]
 \centering
@@ -117,42 +100,74 @@ M9への提供比率に対する操作によって，混合木内の矛盾点は
 \label{table:ProvRatioGroup}
 \end{table}
 
+子ノードのミキサーは，自身の親ノードのミキサーの配置セルと重なるように配置される．
+したがって，特に親ノードのミキサーサイズが4や6など小さい場合，子ノードのミキサー同士の配置セルは近接しやすい．
+ゆえに，提供比率に含まれる混合ノード数が多いほど，ミキサーのオーバーラップが発生しやすいといえる．
+したがって，グループBとグループCの提供比率は，提供比率に含まれる混合ノード数で区分する．
+2番目にミキサーのオーバーラップを発生させる確率が高いグループBは，提供比率に含まれる混合ノード数が3個以上であることが所属の条件となる．
+また，最もミキサーのオーバーラップを発生させる確率が低いグループCは，提供比率に含まれる混合ノード数が0個から2個であることが所属の条件となる．
+
+\ref{sec:ScalingAbout}節で説明した通り，スケーリングは混合ノードの提供比率を変更する．
+提案手法は，スケーリングを行うことで，グループAの提供比率をグループBかグループCの提供比率に変更する．
+提案手法では，スケーリングを行うことで，混合木内のグループAの提供比率の数を削減する．
+
+また，スケーリング後の提供比率に含まれる混合ノード数が増加しない場合，提案手法はグループBの提供比率に対してもスケーリングを行う．
+スケーリングは，子ノードのミキサーから液滴の提供を受ける親ノードのミキサーサイズを増大させる．
+そして，親ノードのミキサーサイズが大きいほど，子ノードのミキサーの配置方法の選択肢は増大する．
+したがって，スケーリングを行うことによって子ノードのミキサーの配置方法の選択肢が増え，ミキサーのオーバーラップが発生しない，ミキサーの配置方法の選択が容易になる．
+以降，グループAとグループBの提供比率をまとめて，スケーリング対象提供比率と呼ぶ．
+
+以上で述べた通り，提案手法は，スケーリング対象提供比率に対してスケーリングを行うことで，よりミキサーのオーバーラップを発生させにくい提供比率に変更する．
+提案手法によって，ミキサーのオーバーラップが発生しにくくなり，試薬合成におけるフラッシング回数は削減される．
+
+図~\ref{fig:ScalingAllTargetRatio}（a）の混合木において，スケーリング対象提供比率に対するスケーリングを行った場合，図~\ref{fig:ScalingAllTargetRatio}（b）の混合木へと変形される．
+\ref{sec:GenerateProcedure}節において説明するアルゴリズムで，10x10セルのPMD上での試薬合成における液滴の混合手順を生成した場合，
+図~\ref{fig:ScalingAllTargetRatio}（a）の混合木では試薬合成にフラッシングが4回必要だったのに対して，
+図~\ref{fig:ScalingAllTargetRatio}（b）の混合木では1回のフラッシングで試薬合成を行うことが可能である．
+
+
+\begin{figure}[tbp]
+    \centering\includegraphics[scale=0.5]{img/ScalingExample.pdf}
+ \caption{スケーリング対象提供比率に対するスケーリングによって，試薬合成におけるフラッシング回数の削減が可能な混合木}\label{fig:ScalingAllTargetRatio}
+\end{figure}
+
 
 
 %\begin{itemize}
 %\item 内部フラッシング（IF）の説明と，IFを起こす確率に基づく混合木内の提供比率のグループ分けの説明\cite{1}\cite{2}．
 %\item 混合木を入力として受け取った直後に，その混合木に含まれるIFが必要となる可能性の高い提供比率のx2スケーリングを行う．
 %\end{itemize}
-\section{PMD上での大きなミキサーを用いた液滴の混合手順生成アルゴリズム}
+\section{PMD上での大きなミキサーを用いた液滴の混合手順生成アルゴリズム}\label{sec:GenerateProcedure}
+
 本節では，Algorithm~\ref{alg:allscaling}の\ref{alg:samplepreparation_pseudo}~行目のPMD上での大きなミキサーを用いた液滴の混合手順生成処理について説明する．
 PMD上での大きなミキサーを用いた液滴の混合手順生成処理は，大きく分けて2つの処理に分けられる．
 
 1つ目の処理は，使用セル数推定値を用いた試薬合成におけるミキサーの配置の決定順序の並び替えである．
 この処理は，使用セル数推定値という指標を用いて，試薬合成におけるミキサーの配置の決定順序の並び替えを行う．
 
-2つ目の処理は，ミキサーの配置処理である．
-使用セル数推定値を用いて並び替えた試薬合成におけるミキサーの配置の決定順序に従って，ミキサーの配置セルを決定する．
-ミキサーの配置処理を進めることにより，入力された混合木に対応した試薬合成をPMD上で実行する際の液滴の混合手順が生成される．
+2つ目の処理は，ミキサーの配置の決定である．
+使用セル数推定値を用いて並び替えた試薬合成におけるミキサーの配置の決定順序に従って，ミキサーの配置を決定する．
+ミキサーの配置を決定することで，入力された混合木に対応した試薬合成をPMD上で実行する際の液滴の混合手順が生成される．
 
-\subsection{使用セル数推定値を用いた試薬合成における\mout{ミキサーの配置の決定順序}の並び替えアルゴリズム}
+\subsection{使用セル数推定値を用いた試薬合成における\mout{ミキサーの配置の決定順序}の並び替えアルゴリズム}\label{sec:ECN}
 既存手法である平井らの手法では，配置優先度という指標に基づいたミキサーの配置の決定順序の並び替えによって，試薬合成におけるフラッシング回数の削減を行う．
 提案手法では，スケーリングに加えて，ミキサーの配置の決定順序の並び替えも行うことで，試薬合成におけるフラッシング回数の削減を行う．
 提案手法は，ミキサーの配置の決定順序の並び替えを行う際に，配置優先度に変わる新たな指標，使用セル数推定値Estimated CellUse Number（ECN）を使用する．
 
 使用セル数推定値を用いた試薬合成におけるミキサーの配置の決定順序の並び替えアルゴリズムではまず，入力された混合木内の全ての混合ノードに使用セル数推定値を割り当てる．
 混合ノードMn（nは混合ノードの番号）の使用セル数推定値は，式~\ref{equ:ECN}で計算される．
-ReagentVol(Mn)は，Mnのミキサーの混合に使用される試薬液滴数を示す．
-例えば，図~\ref{fig:ECNexampleTree}のM1の使用セル数推定値はECN(M1) =0+(ECN(M3)+ECN(M4)) =0+(12+2+ECN(M9)) =0+12+2+6=20と求められる．
-表~\ref{table:ECNValueExample}に，図~\ref{fig:ECNexampleTree}の混合木の各混合ノードに割り当てられる使用セル数推定値の一覧を示す．
+式~\ref{equ:ECN}のReagentVol(Mn)は，Mnのミキサーの混合に使用される試薬液滴数を示す．
+例えば，図~\ref{fig:ScalingAllTargetRatio}（b）のM1の使用セル数推定値はECN(M1) =0+(ECN(M3)+ECN(M4)) =0+(12+2+ECN(M9)) =0+12+2+6=20と計算される．
+表~\ref{table:ECNValueExample}に，図~\ref{fig:ScalingAllTargetRatio}（b）の混合木の各混合ノードに割り当てられる使用セル数推定値の一覧を示す．
 \begin{align}
     ECN(Mn)= ReagentVol(Mn) + \sum ECN(Mnの子ノード).
 \label{equ:ECN}
 \end{align}
 
-\begin{figure}[tbp]
-    \centering\includegraphics[scale=0.5]{img/ECNExampleTree.pdf}
- \caption{使用セル数推定値を求める混合木例}\label{fig:ECNexampleTree}
-\end{figure}
+%\begin{figure}[tbp]
+%    \centering\includegraphics[scale=0.5]{img/ECNExampleTree.pdf}
+% \caption{使用セル数推定値を求める混合木例}\label{fig:ECNexampleTree}
+%\end{figure}
 
 
 使用セル数推定値の割り当て後，各混合ノードの子ノードの配置の決定順序を，使用セル数推定値の順に並び替える．
@@ -161,7 +176,7 @@ ReagentVol(Mn)は，Mnのミキサーの混合に使用される試薬液滴数�
 
 \begin{table}[tbp]
 \centering
-    \caption{図~\ref{fig:ECNexampleTree}の各混合ノードに割り当てられる使用セル数推定値}
+    \caption{図~\ref{fig:ScalingAllTargetRatio}（b）の混合木の各混合ノードに割り当てられる使用セル数推定値}
 \begin{tabular}{l|r|r|r|r|r|r|r|r|r} \Hline
     &\multicolumn{1}{l|}{M1}& \multicolumn{1}{l|}{M2} & \multicolumn{1}{l|}{M3} & \multicolumn{1}{l|}{M4}& \multicolumn{1}{l|}{M5}& \multicolumn{1}{l|}{M6}&  \multicolumn{1}{l|}{M9}& \multicolumn{1}{l|}{M10}& \multicolumn{1}{l}{M11}\\\hline\hline
     使用セル数推定値& 20&22&12&8&12&10&6&6&8  \\\hline
@@ -169,10 +184,10 @@ ReagentVol(Mn)は，Mnのミキサーの混合に使用される試薬液滴数�
 \label{table:ECNValueExample}
 \end{table}
 
-使用セル数推定値の式~\eqref{equ:ECN}は，算出対象の混合ノードをルートとした部分木内の全ての混合ノードのミキサーでの，液滴の混合に使用されるセル数の総和の上限値を算出する．
-提案手法では，使用セル数推定値を，対象の混合ノードのミキサーが液滴の混合を終えるまでに使用するセル数の概算値として用いる．
-高い使用セル数推定値を割り当てられた混合ノードのミキサーが，液滴の混合を行うためには多くのセルが必要とし，他の兄弟ノードのミキサーとオーバーラップを発生させる可能性が高い．
-使用セル数推定値を用いた試薬合成におけるミキサーの配置の決定順序の並び替えアルゴリズムの狙いは，ミキサーのオーバーラップを発生させる可能性が高い混合ノードほど，PMD上に空きセルが多い，小さいタイムステップで優先的に配置方法を決定することである．
+使用セル数推定値の式~\eqref{equ:ECN}は，算出対象の混合ノードをルートとした，部分木内の全ての混合ノードのミキサーで液滴の混合に使用されるセル数の総和の最大値を計算する．
+提案手法では，使用セル数推定値を，対象の混合ノードをルートとした，部分木内の混合ノードが液滴の混合を終えるまでに使用するセル数の概算値として用いる．
+高い使用セル数推定値を割り当てられた混合ノードのミキサーが液滴の混合を終えるまでには，多くのセルを必要とし，他のノードのミキサーとオーバーラップを発生させる可能性が高い．
+使用セル数推定値を用いた試薬合成におけるミキサーの配置の決定順序の並び替えアルゴリズムの狙いは，ミキサーのオーバーラップを発生させる可能性が高い，使用セル数推定値の高い混合ノードほど，PMD上に空きセルが多い，小さいタイムステップで優先的に配置を決定することである．
 そうすることで，ミキサーのオーバーラップが発生しない配置方法を選択することが容易になる．
 
 使用セル数推定値を用いた試薬合成におけるミキサーの配置の決定順序の並び替えアルゴリズムの疑似コードを，Algorithm~\ref{alg:ECN}に示す．
@@ -220,16 +235,144 @@ ReagentVol(Mn)は，Mnのミキサーの混合に使用される試薬液滴数�
  \end{algorithmic}
 \end{algorithm}
 
-\subsection{ミキサーの配置アルゴリズム}
-本節では，PMD上での大きなミキサーを用いた液滴の混合手順生成アルゴリズムにおける2つ目の処理，ミキサーの配置について説明する．
-ミキサーの配置処理では，使用セル数推定値を用いて並び替えた試薬合成におけるミキサーの配置の決定順序に従って，ミキサーの配置セルを決定する，
+\newpage
 
-図~\ref{fig:GeneratingProcedure}に，ミキサーの配置処理の過程を示した．
-図~\ref{fig:GeneratingProcedure}（a）は，図~\ref{fig:ECNexampleTree}と同一の混合木である．
+\subsection{ミキサーの配置の決定アルゴリズム}
+本節では，PMD上での大きなミキサーを用いた液滴の混合手順生成アルゴリズムにおける2つ目の処理，ミキサーの配置の決定について説明する．
+ミキサーの配置の決定処理では，使用セル数推定値を用いて並び替えた試薬合成におけるミキサーの配置の決定順序に従って，ミキサーの配置を決定する，
+
+図~\ref{fig:GeneratingProcedure}に，10x10セルのPMD上へのミキサーの配置の過程を示した．
+図~\ref{fig:GeneratingProcedure}のPMDの左上のセルを（x,y）= （0,0)のセルとする．
+図~\ref{fig:GeneratingProcedure}（a）は，図~\ref{fig:ScalingAllTargetRatio}（b）と同一の混合木である．
+図~\ref{fig:GeneratingProcedure}（b）に示した通り，最初はルートの混合ノードM0のミキサーがPMDの中央に配置される．
+次に，図~\ref{fig:GeneratingProcedure}（c）に示した通り，M0の子ノードM1，M2のミキサーの配置する．
+以降，図~\ref{fig:GeneratingProcedure}（d），（e）においても同様に，PMD上にミキサーを配置された混合ノードの，子ノードのミキサーを配置する．
 
 \begin{figure}[tbp]
-    \centering\includegraphics[scale=0.75]{img/GeneratingProcedure.pdf}
- \caption{ミキサーの配置過程}\label{fig:GeneratingProcedure}
+    \centering\includegraphics[scale=0.5]{img/GeneratingProcedure.pdf}
+ \caption{10x10セルのPMD上へのミキサーの配置を行う過程}\label{fig:GeneratingProcedure}
 \end{figure}
 
+図~\ref{fig:PlacementOfM0Children}（a），（b）は，M0の子ノードであるM1，M2のミキサーの配置方法の一部である．
+それぞれの配置方法では，M1のミキサーが10個，M2のミキサーが2個の提供液滴を，親ノードであるM0のミキサーの配置セル上に残す．
+図~\ref{fig:PlacementOfM0Children}（a）の配置方法は，M1とM2のミキサーの配置セルが重なっておらず，同じタイムステップでM1とM2のミキサーを配置することが可能である．
+図~\ref{fig:PlacementOfM0Children}（b）の配置方法では，M1とM2のミキサーの配置セルが重なっているため，ミキサーのオーバーラップが発生する．
+\ref{sec:flushing}~節で述べた通り，ミキサーのオーバーラップに対しては，フラッシングで対処する必要がある．
+しかし，親ノードのミキサーへの提供液滴は，親ノードのミキサーにおける液滴の混合に用いるため，フラッシングによって洗い流してはいけない．
+図~\ref{fig:PlacementOfM0Children}（b）の配置方法において，M2，M1の順でミキサーの配置を行う場合，M1のミキサーでの液滴の混合を行うためには，M2のミキサーが（3，3），(4，3)のセルに残したM0のミキサーへの提供液滴をフラッシングによって洗い流す必要がある．
+したがって，図~\ref{fig:PlacementOfM0Children}（b）の配置方法において，M2，M1の順でミキサーの配置を行った場合，液滴の混合を行うことは不可能である．
+図~\ref{fig:PlacementOfM0Children}（b）の配置方法では，M1，M2の順でミキサーの配置を行った場合のみ，液滴の混合を行うことが可能である．
+
+\begin{figure}[tbp]
+    \centering\includegraphics[scale=0.8]{img/PlacementOfM0Children.pdf}
+ \caption{M0の子ノードのミキサーの配置方法}\label{fig:PlacementOfM0Children}
+\end{figure}
+
+
+ミキサーの配置の決定アルゴリズムは，図~\ref{fig:PlacementOfM0Children}に示したような配置方法を生成し，評価することで，使用するミキサーの配置方法を決定する．
+ミキサーの配置の決定アルゴリズムは，ミキサーの配置を行う順序と，提供比率に含まれる混合ノードのミキサー間で発生するオーバーラップの回数を基に，配置方法の評価を行う．
+ミキサーの配置の決定アルゴリズムは最初に，配置方法がミキサーの配置を行う順序が適切なものかを評価する．
+表~\ref{table:PlacementOfM0ChildrenEval}に，図~\ref{fig:PlacementOfM0Children}の各配置方法に対する，評価をまとめた．
+\ref{sec:ECN}~説で説明した通り，提案手法は使用セル数推定値という指標に基づいて，ミキサーの配置の決定順序の並び替えを行う．
+\ref{sec:ECN}~節で述べた通り，提案手法では図~\ref{fig:GeneratingProcedure}（a）の混合木におけるM0の子ノードのミキサーの配置の決定はM2，M1という順で行われる．
+つまり，M0の子ノードにおいては，M2のミキサーの後にM1のミキサーで液滴の混合を行う配置方法か，同じタイムステップでM2とM1のミキサーにおける液滴の混合を行う配置方法のみ使用することが可能となる．
+したがって，ミキサーの配置の決定アルゴリズムは，M1，M2という順でM0の子ノードのミキサーの配置を行う必要がある，図~\ref{fig:PlacementOfM0Children}（b）は不適切な配置方法であると評価する．
+そして，M0の子ノードのミキサーの配置には，図~\ref{fig:GeneratingProcedure}（a）の配置方法が使用される．
+提供比率に含まれる混合ノードのミキサーの配置を行う順序が適切な配置方法が複数ある場合は，提供比率に含まれる混合ノードのミキサー間で発生する，オーバーラップの回数を基に配置方法の評価を行う．
+ミキサーの配置の決定アルゴリズムは，提供比率に含まれる混合ノードのミキサー間で発生する，オーバーラップの回数が最も少ない配置方法を選択し，ミキサーの配置を行う．
+ミキサーの配置の決定アルゴリズムの疑似コードを，Algorithm~\ref{alg:Placement}に示す．
+
+\begin{table}[tbp]
+\centering
+    \caption{図~\ref{fig:PlacementOfM0Children}の各配置方法に対する評価}
+\begin{tabular}{l|r|r} \Hline
+    & ミキサーの配置の順序 &\multicolumn{1}{l}{\begin{tabular}{l}提供比率に含まれる混合ノードの\\ミキサー間で発生する\\オーバーラップの回数\end{tabular}  }\\\hline\hline
+ 図~\ref{fig:PlacementOfM0Children}（a）の配置方法    & M1,M2同時 &0  \\\hline
+ 図~\ref{fig:PlacementOfM0Children}（b）の配置方法    & M1→M2 &1  \\\hline
+\end{tabular}
+
+\label{table:PlacementOfM0ChildrenEval}
+\end{table}
+\begin{algorithm}[tbp]
+ \caption{ミキサーの配置の決定}\label{alg:Placement}
+ \begin{algorithmic}[1]
+     \Require $\mathit{MixingNode}$：混合ノード
+     \Require $\mathit{PMD}$：現在のPMDの状態
+
+     \Function{getLayoutOfChildren}{$\mathit{MixingNode,PMD}$} 
+        \State $\mathit{Layouts}\gets$ getLayout($MixingNode.Children,PMD$) \Comment{MixingNodeの子ノードの配置方法を生成}
+        \State $\mathit{MinOverlappCausedInlayout}\gets$ 100000 
+        \State $\mathit{Bestlayout}\gets$ None
+        \ForAll{$\mathit{layout} \gets \mathit{Layouts}$} 
+            \If {$\mathit{layout.PlacementOrder}==\mathit{MixingNode.CorrectPlacementOrder } $}
+                \If{$\mathit{layout.OverlappNum}<\mathit{MinOverlappCausedInlayout}$}
+                    \State $\mathit{Bestlayout}\gets \mathit{layout}$
+                    \State $\mathit{MinFlushingNeededBylayout}\gets \mathit{layout.FlushingNum}$
+                \EndIf
+            \EndIf
+        \EndFor 
+     \Return $\mathit{BestLayout}$
+     \EndFunction 
+\end{algorithmic}
+\end{algorithm}
+
+\newpage
+PMD上の空きセルが少なくなり，ミキサーの配置を進めることができなくなった場合，試薬液滴の配置，ミキサーにおける液滴の混合，フラッシングを行うことにより，PMD上の空きセルを確保し，再度ミキサーの配置を行う．
+ミキサーの配置，試薬液滴の配置，ミキサーにおける液滴の混合，フラッシング，ミキサーの配置という順で操作を繰り返し，最終的に全てのミキサーの配置及び，ミキサーにおける液滴の混合が終了すれば，図~\ref{fig:MixingProcedure}に示した液滴の混合手順が生成される．
+図~\ref{fig:MixingProcedure}（a）から（f）における値Tはミキサーの混合が行われたタイムステップ，値Fはそのタイムステップに至るまでに行ったフラッシング回数を表している．
+図~\ref{fig:MixingProcedure}から，図~\ref{fig:GeneratingProcedure}（a）の混合木に対応した試薬合成における液滴の混合手順では，1回のフラッシングが必要であることがわかる．
+ミキサーの配置は混合木のルートの混合ノードから行われるのに対して，図~\ref{fig:MixingProcedure}の混合手順から分かる通り，液滴の混合は葉の混合ノードのミキサーから行われる．
+試薬合成におけるミキサーの混合手順の生成アルゴリズムの疑似コードを，Algorithm~\ref{alg:genMixingProcedure}に示す．
+
+\begin{figure}[tbp]
+    \centering\includegraphics[scale=0.75]{img/MixingProcedure.pdf}
+    \caption{図~\ref{fig:GeneratingProcedure}（a）の混合木に対応した試薬合成におけるミキサーの混合手順}
+    \label{fig:MixingProcedure}
+\end{figure}
+
+\begin{algorithm}[tbp]
+ \caption{ミキサーの混合手順の生成}\label{alg:genMixingProcedure}
+ \begin{algorithmic}[1]
+     \Require $\mathit{Tree}$：ミキサーサイズ4，6，8，12の混合ノードと，試薬液滴ノードを含む混合木 
+     \Require $\mathit{PMDSize}$：使用するPMDのサイズ
+
+     \Function{SamplePreparation}{$\mathit{Tree,PMDSize}$} 
+     \State $\mathit{PMD}\,\gets $  PMDInit($\mathit{PMDSize}$)
+     \State $\mathit{PMD}\,\gets $  PlaceOnPMD($\mathit{Tree.RootMixer,PMD}$)
+     \State $\mathit{ret} \gets $array() \Comment{混合手順を記録するための配列}
+
+    \State \While{$Tree.RootMixer.state \neq Mixed $ }
+        \ForAll{$\mathit{mixer} \gets \mathit{PMD.MixerOnPMD}$} 
+        \State $\mathit{AllChildrenPlaced}\gets\mathit{True}$
+        \State $\mathit{AllChildrenMixerMixed}\gets\mathit{True}$
+        \State $\mathit{ShouldFlush}\gets\mathit{True}$
+        \State $\mathit{LayoutOfChildren}\gets$getLayoutOfChildren($\mathit{mixer,PMD}$) \Comment{子ノードのミキサーの配置の決定}
+
+        \ForAll{$\mathit{child} \gets \mathit{mixer.children}$} 
+            \If{ CanPlace($\mathit{LayoutOfChildren[child],PMD}$)}
+                \State$\mathit{AllChildrenPlaced \gets False}$
+                \State $\mathit{PMD}\, \gets$  PlaceOnPMD($\mathit{LayoutOfChildren[child],PMD}$) \Comment{子ノードのミキサーや試薬の配置}
+                \State $\mathit{ShouldFlush}\gets\mathit{False}$
+            \EndIf 
+            \If {$\mathit{child.kind}==\mathit{Mixer} \: \mathit{\mathbf{and}}\: \mathit{child.state}\neq\mathit{Mixed}$}
+                \State $\mathit{AllChildrenMixerMixed}\gets\mathit{False}$
+            \EndIf 
+        \EndFor 
+
+         \If{$\mathit{AllChildrenPlaced}\,\mathit{\mathbf{and}}\, \mathit{AllChildrenMixerMixed}$}
+            \State$\mathit{PMD}\gets$Mix($\mathit{mixer,PMD}$)\Comment{ミキサーの混合}
+            \State$\mathit{mixer.state} \gets \mathit{Mixed}$ 
+            \State$\mathit{ret} $.append($\mathit{mixer}$) 
+            \State $\mathit{ShouldFlush}\gets\mathit{False}$
+        \EndIf
+        \EndFor 
+     \If{$\mathit{ShouldFlush}$}
+                    \State $\mathit{PMD}\gets$Flush($\mathit{PMD}$)\Comment{フラッシング}
+                \EndIf
+    \EndWhile 
+
+     \Return $\mathit{ret}$
+     \EndFunction
+ \end{algorithmic}
+\end{algorithm}
 
