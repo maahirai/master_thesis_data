@@ -1,4 +1,4 @@
 Height,#MixerNum,#FreqWithoutPPV,#FreqWithPPV,#FreqWithoutScaling,#FreqWithScaling,#CelluseWithoutPPV,#CelluseWithPPV,#CelluseWithoutScaling,#CelluseWithScaling,#OverlappWithoutPPV,#OverlappWithPPV,#OverlappWithoutScaling,#OverlappWithScaling,#FlushingWithoutPPV,#FlushingWithPPV,#FlushingWithoutScaling,#FlushingWithScaling,OverlappReductionRateByPPValue,OverlappReductionRateByScaling,FlushingReductionRateByPPValue,FlushingReductionRateByScaling
-2,3.097,1.401,1.401,1.393,1.379,11.41,11.41,11.462,13.151,0.313,0.313,0.277,0.003,0.313,0.313,0.3,0.003,0.0,27.162,0.0,27.173
-3,6.663,1.864,1.862,1.705,1.616,18.302,18.306,20.028,25.008,1.901,1.897,1.063,0.27,1.623,1.583,1.095,0.238,0.0,52.23,0.175,58.918
-4,11.449,2.523,2.506,1.994,1.71,22.609,22.826,28.688,42.246,4.522,4.493,2.449,0.493,4.601,4.471,2.406,0.449,0.153,74.928,1.971,76.509
+2,3.097,1.401,1.401,1.393,1.379,11.41,11.41,11.462,13.151,0.313,0.313,0.277,0.003,0.313,0.313,0.3,0.003,0.0,27.436,0.0,27.436
+3,6.663,1.864,1.862,1.705,1.616,18.302,18.306,20.028,25.008,1.901,1.897,1.063,0.27,1.623,1.583,1.095,0.238,0.066,53.638,0.959,59.392
+4,11.449,2.523,2.506,1.994,1.71,22.609,22.826,28.688,42.246,4.522,4.493,2.449,0.493,4.601,4.471,2.406,0.449,0.419,75.323,2.712,76.914
