@@ -26,6 +26,8 @@
 また，表~\ref{table:ExistingResult}に，既存手法である平井らの手法の実験結果を示す．
 表~\ref{table:result}における変形とは，スケーリングを用いた入力混合木の変形を指す．
 表~\ref{table:ExistingResult}における並び替えとは，配置優先度を用いたミキサーの配置の決定順序の並び替えを指す．
+変形や並び替え前の値を$before$,変形や並び替え後の値を$after$とすると，オーバーラップを発生させるミキサーの配置を行った回数や
+フラッシング回数などの削減率$ReductionRate$の値は式\ref{equ:ReductionRate}で計算される．
 
 %卒論の手法と提案手法での試薬合成中のフラッシング回数，使用セル数を比較し，表にまとめる．
 %縮小版
@@ -58,6 +60,17 @@
 \label{table:ExistingResult}
 \end{table}
 
+
+\begin{equation}
+    ReductionRate = 
+        \begin{cases}
+            (1-(after/before))*100 & (before > after)\\
+            ((before/after)-1)*100 & (before < after)\\
+            0 & (before = after)
+        \end{cases}
+    \label{equ:ReductionRate}
+\end{equation}
+
 ミキサー数の列は，各高さの混合木に対応した試薬合成中に混合されるミキサー数の平均を示す．
 同じ混合木を入力としたので，表~\ref{table:result}，表~\ref{table:ExistingResult}においてミキサー数の値は同じである．
 オーバーラップを発生させるミキサーの配置を行った回数の列は，液滴の混合手順において提供比率に含まれる混合ノードのミキサー同士でオーバーラップが発生する配置を行なった回数の平均を示す．
@@ -71,18 +84,6 @@
 フラッシング回数の削減率の平均の列は，変形や並び替えによるフラッシング回数の削減率の平均を示す．
 表~\ref{table:result}，表~\ref{table:ExistingResult}では，平井らの手法における高さ3の混合木以外，削減率の平均は正の値を取っている．
 また，混合木の高さが大きくなるほど，削減率の平均は高くなっている．
-
-変形や並び替え前の値を$before$,変形や並び替え後の値を$after$とすると，オーバーラップを発生させるミキサーの配置を行った回数や
-フラッシング回数などの削減率$ReductionRate$の値は式\ref{equ:ReductionRate}で計算される．
-\begin{equation}
-    ReductionRate = 
-        \begin{cases}
-            (1-(after/before))*100 & (before > after)\\
-            ((before/after)-1)*100 & (before < after)\\
-            0 & (before = after)
-        \end{cases}
-    \label{equ:ReductionRate}
-\end{equation}
 
 図~\ref{fig:FlushingReductionRate}に，それぞれの手法における入力混合木の高さと，フラッシング回数の削減率の関係をグラフで示す．
 図~\ref{fig:FlushingReductionRate}から，提案手法と平井らの手法のどちらにおいても，混合木の高さが大きくなるほど，フラッシング回数の削減率が高くなることが分かる．
