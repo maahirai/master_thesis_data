@@ -72,6 +72,17 @@
 表~\ref{table:result}，表~\ref{table:ExistingResult}では，平井らの手法における高さ3の混合木以外，削減率の平均は正の値を取っている．
 また，混合木の高さが大きくなるほど，削減率の平均は高くなっている．
 
+変形や並び替え前のフラッシング等の値を$before$,変形や並び替え後のフラッシング等の値を$after$とすると，各種の削減率$ReductionRate$の値は式\ref{equ:ReductionRate}で計算される．
+\begin{equation}
+    ReductionRate = 
+        \begin{cases}
+            (1-(after/before))*100 & (before > after)\\
+            ((before/after)-1)*100 & (before < after)\\
+            0 & (before = after)
+        \end{cases}
+    \label{equ:ReductionRate}
+\end{equation}
+
 図~\ref{fig:FlushingReductionRate}に，それぞれの手法における入力混合木の高さと，フラッシング回数の削減率の関係をグラフで示す．
 図~\ref{fig:FlushingReductionRate}から，提案手法と平井らの手法のどちらにおいても，混合木の高さが大きくなるほど，フラッシング回数の削減率が高くなることが分かる．
 
