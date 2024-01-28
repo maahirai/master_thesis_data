@@ -1,22 +1,25 @@
 \chapter{スケーリングを用いた試薬合成中におけるフラッシング回数の削減手法}
-\section{\mout{アルゴリズムの概要}}
+\section{\mout{提案手法の概要}}
 本論文の提案手法である，スケーリングを用いた試薬合成中におけるフラッシング回数の削減手法は，スケーリングという処理を行うことで入力された混合木の変形を行い，試薬合成中に行われるフラッシング回数を削減する手法である．
 本節では，\gout{提案}手法の処理の流れを説明する．
 
 提案手法の入出力データについて説明を行う．
-提案手法の入力は，図~\ref{fig:ScalingInputOutput}（a）の混合木である．この混合木は，図~\ref{fig:xntm}（a）と同じ混合木である．
+提案手法の入力は，図~\ref{fig:ScalingInputOutput}（a）の混合木\mout{とする}．この混合木は，図~\ref{fig:xntm}（a）と同じ混合木である．
 提案手法の出力は，図~\ref{fig:ScalingInputOutput}（b）から（d）のPMD上での試薬合成における液滴の混合手順である．
 図~\ref{fig:ScalingInputOutput}（b）から（d）における値Tはミキサーの混合が行われたタイムステップ，値Fはそのタイムステップに至るまでに行ったフラッシング回数を表している．
-提案手法では，既存手法である平井らの手法よりも少ないフラッシング回数で試薬合成を行うことを目指\gout{す}．
-%平井らの手法では，図~\ref{fig:xntm}で示した通り，図~\ref{fig:ScalingInputOutput}（a）の混合木の試薬合成に1回のフラッシングを必要とする．
+提案手法では，配置優先度を用いた手法よりも少ないフラッシング回数で試薬合成を行うことを目指\gout{す}．
+%配置優先度を用いた手法では，図~\ref{fig:xntm}で示した通り，図~\ref{fig:ScalingInputOutput}（a）の混合木の試薬合成に1回のフラッシングを必要とする．
 %それに対して，提案手法は図~\ref{fig:ScalingInputOutput}（a）の混合木の試薬合成をフラッシングなしで行うことが可能である．
-%したがって，図~\ref{fig:ScalingInputOutput}（a）の混合木の試薬合成においては，提案手法は平井らの手法よりフラッシングを削減することに成功している．
+%したがって，図~\ref{fig:ScalingInputOutput}（a）の混合木の試薬合成においては，提案手法は配置優先度を用いた手法よりフラッシングを削減することに成功している．
 
 Algorithm~\ref{alg:allscaling}に，提案手法全体の処理の流れの疑似コードを示\gout{す}．
 提案手法を大きく分けると，Algorithm~\ref{alg:allscaling}の\ref{alg:scaling_pseudo}~行目のスケーリングを用いた入力混合木の変形と，Algorithm~\ref{alg:allscaling}の\ref{alg:samplepreparation_pseudo}~行目のPMD上での大きなミキサーを用いた液滴の混合手順\gout{の}生成の，2つの処理によって構成されている．
 
 \begin{figure}[tbp]
- \centering\includegraphics[scale=0.51]{img/ScalingInputOutput.pdf}
+ \centering 
+    \begin{center}
+    \includegraphics[scale=0.45]{img/ScalingInputOutput.pdf}
+    \end{center}
  \caption{提案手法の入力：混合木，出力：PMD上での液滴の混合手順}\label{fig:ScalingInputOutput}
 \end{figure}
 
@@ -48,7 +51,7 @@ M5への提供比率に対するスケーリングによって，図~\ref{fig:Sc
 %\end{figure}
 
 \begin{figure}[tbp]
- \centering\includegraphics[scale=0.6]{img/ScalingInDetail.pdf}
+ \centering\includegraphics[scale=0.55]{img/ScalingInDetail.pdf}
  \caption{スケーリングを用いた入力混合木の変形の詳細}\label{fig:ScalingInDetail}
 \end{figure}
 
@@ -80,18 +83,18 @@ M9への提供比率に対する\gout{スケーリング}によって，混合�
 \ref{sec:flushing}~節では，提供比率などの情報から，ミキサーのオーバーラップの発生を予測することがある程度可能であることを述べた．
 本節では，提供比率とミキサーのオーバーラップの関係性と，試薬合成中に行われるフラッシング回数を削減するためのスケーリングの活用方法について述べる．
 
-表~\ref{table:ProvRatioGroup}に，試薬合成中にミキサーのオーバーラップを発生させる確率に基づいて分けられた，提供比率のグループを示す．
+表~\ref{table:ProvRatioGroup}に，試薬合成中にミキサーのオーバーラップ\mout{の起こりやすさ}に基づいて分けられた，提供比率のグループを示す．
 上部のグループに属する提供比率ほど，ミキサーのオーバーラップを発生させる確率が高い．
 最もミキサーのオーバーラップを発生させる確率が高いグループAは，図~\ref{fig:flushing}（a）の点線部の5:1のような，5などの3以上の奇数個の液滴を提供する混合ノードが含まれる提供比率である．
-\ref{sec:flushing}~節で説明した通り，グループAの提供比率はミキサーのオーバーラップを発生させることが確定しており，オーバーラップ確定提供比率と呼ばれる．
-提供比率がグループAに属するか否かの判定には，提供比率に含まれる混合ノード数は関係ないので，混合ノード数の条件は＊（ドントケア)とした．
+\ref{sec:flushing}~節で説明した通り，グループAの提供比率はミキサーのオーバーラップを発生させることが確定しており，オーバーラップ確定提供比率と呼\mout{ぶ}．
+提供比率がグループAに属するか否かの判定には，提供比率に含まれる混合ノード数は関係ないので，混合ノード数の条件は＊（ドントケア)と\mout{する．}
 
 \begin{table}[tbp]
 \centering
     \caption{ミキサーのオーバーラップを発生させる確率の高さに基づいて分けられた，提供比率のグループ}
 \begin{tabular}{l|r|r} \Hline
     &\multicolumn{1}{l|}{混合ノード数}& \multicolumn{1}{l}{備考} \\\hline\hline
-    \begin{tabular}{l}グループA\\（オーバーラップ確定提供比率）\end{tabular} & * & \begin{tabular}{l}3以上の奇数の個数の中間液滴を，\\親ノードのミキサーへ提供する\\混合ノードが含まれる場合のみ\end{tabular} \\\hline
+    \begin{tabular}{l}グループA\\（オーバーラップ確定提供比率）\end{tabular} & * & \begin{tabular}{l}3以上の奇数の個数の中間液滴を，\\親ノードのミキサーへ提供する\\混合ノードが含まれる場合\end{tabular} \\\hline
     グループB & 3 以上  &  \\\hline
     グループC & 0 - 2 &  \\\hline
 \end{tabular}
@@ -148,7 +151,7 @@ PMD上での大きなミキサーを用いた液滴の混合手順生成処理�
 %ミキサーの配置\gout{が}決定\gout{されることで}，入力された混合木に対応した試薬合成\gout{を行うPMD上における}液滴の混合手順\gout{が生成され}る．
 
 \subsection{使用セル数推定値を用いた試薬合成における\mout{ミキサーの配置の決定順序}の並び替えアルゴリズム}\label{sec:ECN}
-既存手法である平井らの手法では，配置優先度という指標に基づいたミキサーの配置の決定順序の並び替えによって，試薬合成におけるフラッシング回数の削減を行う．
+配置優先度を用いた手法では，配置優先度という指標に基づいたミキサーの配置の決定順序の並び替えによって，試薬合成におけるフラッシング回数の削減を行う．
 提案手法では，スケーリングに加えて，ミキサーの配置の決定順序の並び替えも行うことで，試薬合成におけるフラッシング回数の削減を行う．
 提案手法は，ミキサーの配置の決定順序の並び替えを行う際に，配置優先度に変わる新たな指標，使用セル数推定値Estimated CellUse Number（ECN）を使用する．
 
