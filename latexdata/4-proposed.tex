@@ -1,6 +1,6 @@
-\chapter{スケーリングを用いた試薬合成中におけるフラッシング回数の削減手法}
+\chapter{スケーリングを用いた試薬合成におけるフラッシング回数の削減手法}
 \section{\mout{提案手法の概要}}
-本論文の提案手法である，スケーリングを用いた試薬合成中におけるフラッシング回数の削減手法は，スケーリングという処理を行うことで入力された混合木の変形を行い，試薬合成中に行われるフラッシング回数を削減する手法である．
+本論文の提案手法である，スケーリングを用いた試薬合成におけるフラッシング回数の削減手法は，スケーリングという処理を行うことで入力された混合木の変形を行い，試薬合成におけるフラッシング回数を削減する手法である．
 本節では，\gout{提案}手法の処理の流れを説明する．
 
 提案手法の入出力データについて説明を行う．
@@ -79,11 +79,11 @@ M9への提供比率に対する\gout{スケーリング}によって，混合�
 省略可能な混合ノードM1を削除することで，図~\ref{fig:Merge}（b）の混合木には図~\ref{fig:Merge}（c）の混合木への変形が行われる．
 このように，スケーリングに伴って，省略可能になった混合ノードを混合木から削除する操作のことを，混合ノードのマージという．
 
-\subsection{試薬合成中に行われるフラッシング回数を増加させる提供比率}\label{ratio}
+\subsection{試薬合成におけるフラッシング回数を増加させる提供比率}\label{ratio}
 \ref{sec:flushing}~節では，提供比率などの情報から，ミキサーのオーバーラップの発生を予測することがある程度可能であることを述べた．
-本節では，提供比率とミキサーのオーバーラップの関係性と，試薬合成中に行われるフラッシング回数を削減するためのスケーリングの活用方法について述べる．
+本節では，提供比率とミキサーのオーバーラップの関係性と，試薬合成におけるフラッシング回数を削減するためのスケーリングの活用方法について述べる．
 
-表~\ref{table:ProvRatioGroup}に，試薬合成中にミキサーのオーバーラップ\mout{の起こりやすさ}に基づいて分けられた，提供比率のグループを示す．
+表~\ref{table:ProvRatioGroup}に，試薬合成中のミキサーのオーバーラップ\mout{の起こりやすさ}に基づいて分けられた，提供比率のグループを示す．
 上部のグループに属する提供比率ほど，ミキサーのオーバーラップを発生させる確率が高い．
 最もミキサーのオーバーラップを発生させる確率が高いグループAは，図~\ref{fig:flushing}（a）の点線部の5:1のような，5などの3以上の奇数個の液滴を提供する混合ノードが含まれる提供比率である．
 \ref{sec:flushing}~節で説明した通り，グループAの提供比率はミキサーのオーバーラップを発生させることが確定しており，オーバーラップ確定提供比率と呼\mout{ぶ}．
@@ -161,7 +161,7 @@ PMD上での大きなミキサーを用いた液滴の混合手順生成処理�
 例えば，図~\ref{fig:ScalingAllTargetRatio}（b）のM1の使用セル数推定値はECN(M1) =0+(ECN(M3)+ECN(M4)) =0+(12+2+ECN(M9)) =0+12+2+6=20と計算される．
 表~\ref{table:ECNValueExample}に，図~\ref{fig:ScalingAllTargetRatio}（b）の混合木の各混合ノードに割り当てられる使用セル数推定値の一覧を示す．
 \begin{align}
-    ECN(Mn)= ReagentVol(Mn) + \sum ECN(Mnの子ノード).
+    {\it ECN}(Mn)= {\it ReagentVol}(Mn) + \sum {\it ECN}(Mnの子ノード).
 \label{equ:ECN}
 \end{align}
 
@@ -298,18 +298,18 @@ PMD上での大きなミキサーを用いた液滴の混合手順生成処理�
 \begin{algorithm}[tbp]
  \caption{ミキサーの配置の決定}\label{alg:Placement}
  \begin{algorithmic}[1]
-     \Require $\mathit{MixingNode}$：混合ノード
+     \Require $\mathit{MixingNode}$：子ノードの配置を行う混合ノード
      \Require $\mathit{PMD}$：現在のPMDの状態
 
      \Function{getLayoutOfChildren}{$\mathit{MixingNode,PMD}$} 
         \State $\mathit{Layouts}\gets$ getLayout($MixingNode.Children,PMD$) \Comment{MixingNodeの子ノードの配置方法を生成}
-        \State $\mathit{MinOverlappCausedInlayout}\gets$ 100000 
-        \State $\mathit{Bestlayout}\gets$ None
+        \State $\mathit{MinOverlappHappenedInLayout}\gets$ 100000 
+        \State $\mathit{BestLayout}\gets$ None
         \ForAll{$\mathit{layout} \gets \mathit{Layouts}$} 
             \If {$\mathit{layout.PlacementOrder}==\mathit{MixingNode.CorrectPlacementOrder } $}
-                \If{$\mathit{layout.OverlappNum}<\mathit{MinOverlappCausedInlayout}$}
-                    \State $\mathit{Bestlayout}\gets \mathit{layout}$
-                    \State $\mathit{MinFlushingNeededBylayout}\gets \mathit{layout.FlushingNum}$
+                \If{$\mathit{layout.OverlappNum}<\mathit{MinOverlappHappenedInLayout}$}
+                    \State $\mathit{BestLayout}\gets \mathit{layout}$
+                    \State $\mathit{MinOverlappHappenedInLayout}\gets \mathit{layout.OverlappNum}$
                 \EndIf
             \EndIf
         \EndFor 
